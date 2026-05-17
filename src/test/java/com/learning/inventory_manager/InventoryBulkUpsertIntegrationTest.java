@@ -1,9 +1,9 @@
 //package com.learning.inventory_manager;
 //
-//import com.learning.inventory_manager.presentation.rest.dto.request.BulkInventoryUpsertRequest;
-//import com.learning.inventory_manager.presentation.rest.dto.request.InventoryItemRequest;
+//import com.learning.inventory_manager.web.model.BulkInventoryUpsertRequest;
+//import com.learning.inventory_manager.web.model.InventoryItemRequest;
 //import com.learning.inventory_manager.infrastructure.persistence.entity.WarehouseEntity;
-//import com.learning.inventory_manager.infrastructure.persistence.repository.WarehouseRepository;
+//import com.learning.inventory_manager.gateway.WarehouseRepository;
 //import org.junit.Ignore;
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;

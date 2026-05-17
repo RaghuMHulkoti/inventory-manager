@@ -1,9 +1,9 @@
 //package com.learning.inventory_manager.application.service;
 //
-//import com.learning.inventory_manager.domain.exception.InventoryValidationException;
-//import com.learning.inventory_manager.domain.gateway.InventoryGateway;
-//import com.learning.inventory_manager.domain.gateway.InventoryLedgerGateway;
-//import com.learning.inventory_manager.domain.model.Inventory;
+//import com.learning.inventory_manager.exception.InventoryValidationException;
+//import com.learning.inventory_manager.gateway.InventoryGateway;
+//import com.learning.inventory_manager.gateway.InventoryLedgerGateway;
+//import com.learning.inventory_manager.core.domain.Inventory;
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;
 //import org.junit.jupiter.api.extension.ExtendWith;

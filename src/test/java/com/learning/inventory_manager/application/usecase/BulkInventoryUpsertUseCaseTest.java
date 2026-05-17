@@ -1,11 +1,11 @@
 //package com.learning.inventory_manager.application.usecase;
 //
-//import com.learning.inventory_manager.application.service.InventoryService;
-//import com.learning.inventory_manager.domain.exception.WarehouseNotFoundException;
-//import com.learning.inventory_manager.domain.gateway.InventoryGateway;
-//import com.learning.inventory_manager.domain.gateway.WarehouseGateway;
-//import com.learning.inventory_manager.domain.model.Inventory;
-//import com.learning.inventory_manager.presentation.rest.dto.request.InventoryItemRequest;
+//import com.learning.inventory_manager.core.processor.service.InventoryService;
+//import com.learning.inventory_manager.exception.WarehouseNotFoundException;
+//import com.learning.inventory_manager.gateway.InventoryGateway;
+//import com.learning.inventory_manager.gateway.WarehouseGateway;
+//import com.learning.inventory_manager.core.domain.Inventory;
+//import com.learning.inventory_manager.web.model.InventoryItemRequest;
 //import com.learning.inventory_manager.presentation.rest.dto.response.InventoryUpsertItemResult;
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;

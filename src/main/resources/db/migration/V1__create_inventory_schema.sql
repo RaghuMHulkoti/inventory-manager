@@ -58,4 +58,3 @@ CREATE TABLE inventory_ledger (
         FOREIGN KEY (inventory_id)
         REFERENCES inventory(id)
 );
-

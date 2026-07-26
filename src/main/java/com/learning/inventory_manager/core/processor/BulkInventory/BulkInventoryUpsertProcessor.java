@@ -6,84 +6,73 @@ import com.learning.inventory_manager.core.usecase.bulkInventory.BulkInventoryUp
 import com.learning.inventory_manager.core.usecase.bulkInventory.BulkInventoryUpsertUsecaseResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 /**
  * Bulk Inventory Upsert Processor.
- * Bridges controller and usecase layers.
+ *
+ * Bridges the controller and the use case layer.
  *
  * Responsibility:
- * - Orchestrate request flow
- * - Convert DTOs if needed (here minimal conversion)
- * - Call appropriate usecase
- * - Build response DTOs
+ * - Pass the domain Inventory objects from the processor request to the use case
+ * - Aggregate use case results into a processor response
+ * - Convert domain enums (Status, Operation) to String values for the web layer
  * - Request-level logging
  *
- * Processing Flow:
- * 1. Accept request from controller
- * 2. Call usecase
- * 3. Aggregate results
- * 4. Build response
- * 5. Return to controller
+ * No business logic lives here — that belongs exclusively in the use case.
  */
-@Component
 public class BulkInventoryUpsertProcessor implements Processor<BulkInventoryUpsertProcessorRequest, BulkInventoryUpsertProcessorResponse> {
-    private static final Logger logger = LoggerFactory.getLogger(BulkInventoryUpsertProcessor.class);
+
+    private static final Logger log = LoggerFactory.getLogger(BulkInventoryUpsertProcessor.class);
+
     private final BulkInventoryUpsertUseCase upsertUseCase;
 
     public BulkInventoryUpsertProcessor(BulkInventoryUpsertUseCase upsertUseCase) {
         this.upsertUseCase = upsertUseCase;
     }
 
-
     @Override
     public BulkInventoryUpsertProcessorResponse process(BulkInventoryUpsertProcessorRequest request) {
-        logger.info("Processing bulk inventory upsert request from supplier: {}", request.supplierId());
+        log.info("Processing bulk inventory upsert request from supplier: {}", request.getSupplierId());
 
-        var usecaseResponse = upsertUseCase.execute(new BulkInventoryUpsertUsecaseRequest(
-                request.supplierId(),
-                request.items().stream()
-                        .map(item -> new BulkInventoryUpsertUsecaseRequest.Item(
-                                item.supplierProductId(),
-                                item.warehouseId(),
-                                item.quantityOnHand()
-                        ))
-                        .toList()
-        ));
+        var usecaseRequest = buildBulkInventoryUpsertUsecaseRequest(request);
+        var usecaseResponse = upsertUseCase.execute(usecaseRequest);
 
         var response = buildResponse(usecaseResponse);
 
-        logger.info("Bulk inventory upsert request processed. Success: {}, Failure: {}",
-                response.successCount(), response.failureCount());
+        log.info("Bulk inventory upsert request processed. Success: {}, Failure: {}",
+                response.getSuccessCount(), response.getFailureCount());
 
         return response;
     }
 
+    private BulkInventoryUpsertUsecaseRequest buildBulkInventoryUpsertUsecaseRequest(BulkInventoryUpsertProcessorRequest request) {
+        return BulkInventoryUpsertUsecaseRequest.builder()
+                .supplierId(request.getSupplierId())
+                .items(request.getItems())
+                .build();
+    }
+
     private BulkInventoryUpsertProcessorResponse buildResponse(BulkInventoryUpsertUsecaseResponse usecaseResponse) {
-        var results = usecaseResponse.results().stream()
-                .map(result -> new BulkInventoryUpsertProcessorResponse.ItemResult(
-                        result.supplierProductId(),
-                        result.warehouseId(),
-                        result.status().name(),
-                        result.operation() == null ? null : result.operation().name(),
-                        result.errorMessage(),
-                        result.quantityDelta()
-                ))
+        var results = usecaseResponse.getResults().stream()
+                .map(result -> BulkInventoryUpsertProcessorResponse.ItemResult.builder()
+                        .supplierProductId(result.getSupplierProductId())
+                        .warehouseId(result.getWarehouseId())
+                        .status(result.getStatus().name())
+                        .operation(result.getOperation() == null ? null : result.getOperation().name())
+                        .errorMessage(result.getErrorMessage())
+                        .quantityDelta(result.getQuantityDelta())
+                        .build())
                 .toList();
 
-        int successCount = (int) usecaseResponse.results().stream()
-                .filter(r -> r.status() == BulkInventoryUpsertUsecaseResponse.Status.SUCCESS)
+        int successCount = (int) usecaseResponse.getResults().stream()
+                .filter(r -> r.getStatus() == BulkInventoryUpsertUsecaseResponse.Status.SUCCESS)
                 .count();
-
         int failureCount = results.size() - successCount;
 
-        return new BulkInventoryUpsertProcessorResponse(
-                results.size(),
-                successCount,
-                failureCount,
-                results
-        );
+        return BulkInventoryUpsertProcessorResponse.builder()
+                .totalProcessed(results.size())
+                .successCount(successCount)
+                .failureCount(failureCount)
+                .results(results)
+                .build();
     }
 }
-
-

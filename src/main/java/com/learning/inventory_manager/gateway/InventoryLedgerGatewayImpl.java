@@ -1,45 +1,18 @@
 package com.learning.inventory_manager.gateway;
 
 import com.learning.inventory_manager.core.domain.InventoryLedgerEntry;
-import com.learning.inventory_manager.gateway.entity.InventoryLedgerEntity;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import java.time.LocalDateTime;
-
-/**
- * Inventory Ledger Gateway implementation.
- * Appends immutable ledger entries for inventory change tracking.
- *
- * Responsibility:
- * - Convert domain ledger entries to entities
- * - Persist immutable audit trail
- * - Handle ledger-specific logic
- */
-@Component
-@RequiredArgsConstructor
 public class InventoryLedgerGatewayImpl implements InventoryLedgerGateway {
-    private static final Logger log = LoggerFactory.getLogger(InventoryLedgerGatewayImpl.class);
+
     private final InventoryLedgerRepository repository;
+    private final InventoryEntityMapper mapper;
+
+    public InventoryLedgerGatewayImpl(InventoryLedgerRepository repository, InventoryEntityMapper mapper) {
+        this.repository = repository;
+        this.mapper = mapper;
+    }
 
     @Override
-    public void recordChange(InventoryLedgerEntry entry) {
-        log.debug("Recording inventory change for inventory: {}, type: {}, delta: {}", 
-            entry.getInventoryId(), entry.getChangeType(), entry.getQuantityDelta());
-        
-        var entity = InventoryLedgerEntity.builder()
-            .inventoryId(entry.getInventoryId())
-            .changeType(entry.getChangeType())
-            .quantityDelta(entry.getQuantityDelta())
-            .quantityAfter(entry.getQuantityAfter())
-            .referenceId(entry.getReferenceId())
-            .note(entry.getNote())
-            .createdAt(LocalDateTime.now())
-            .build();
-        
-        repository.save(entity);
-        log.debug("Ledger entry recorded successfully");
+    public void recordChange(InventoryLedgerEntry ledgerEntry) {
+        repository.save(mapper.toEntity(ledgerEntry));
     }
 }
-

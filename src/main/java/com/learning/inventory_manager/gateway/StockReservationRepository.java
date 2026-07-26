@@ -2,35 +2,36 @@ package com.learning.inventory_manager.gateway;
 
 import com.learning.inventory_manager.gateway.entity.StockReservationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Repository for Stock Reservation entity.
- *
- * Responsibility:
- * - Provide JPA database access for reservations
- * - Enable queries for reservation lookups and reporting
- */
 @Repository
 public interface StockReservationRepository extends JpaRepository<StockReservationEntity, UUID> {
-    /**
-     * Find all reservations for an inventory.
-     * Used to calculate total reserved quantity.
-     *
-     * @param inventoryId the inventory ID
-     * @return list of reservation records
-     */
+
     List<StockReservationEntity> findByInventoryId(UUID inventoryId);
 
-    /**
-     * Find all reservations for an order.
-     * Used to manage order-level reservation operations.
-     *
-     * @param orderId the order ID
-     * @return list of reservation records for the order
-     */
     List<StockReservationEntity> findByOrderId(UUID orderId);
-}
 
+    Optional<StockReservationEntity> findByIdempotencyKey(String idempotencyKey);
+
+    /** All HELD reservations that have passed their expiry — used by the cleanup job. */
+    @Query("SELECT r FROM StockReservationEntity r WHERE r.status = 'HELD' AND r.expiresAt < :now")
+    List<StockReservationEntity> findExpiredHeldReservations(@Param("now") LocalDateTime now);
+
+    /** Transition a reservation to RELEASED. */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StockReservationEntity r SET r.status = 'RELEASED', r.releasedAt = :releasedAt WHERE r.id = :id AND r.status = 'HELD'")
+    int markReleased(@Param("id") UUID id, @Param("releasedAt") LocalDateTime releasedAt);
+
+    /** Transition a reservation to COMMITTED. */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StockReservationEntity r SET r.status = 'COMMITTED', r.committedAt = :committedAt WHERE r.id = :id AND r.status = 'HELD'")
+    int markCommitted(@Param("id") UUID id, @Param("committedAt") LocalDateTime committedAt);
+}

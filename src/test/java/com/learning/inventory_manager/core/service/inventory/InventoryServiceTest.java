@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class InventoryServiceTest {
+
     private FakeInventoryGateway inventoryGateway;
     private RecordingLedgerGateway ledgerGateway;
     private InventoryService service;
@@ -37,40 +38,61 @@ class InventoryServiceTest {
 
     @Test
     void executeCreatesInventoryWhenNoExistingInventoryIsFound() {
-        var request = new InventoryServiceRequest(supplierProductId, warehouseId, 100, supplierId);
+        // Incoming domain object: new inventory with quantity 100
+        var incoming = new Inventory(java.util.UUID.randomUUID(), supplierProductId, warehouseId, 100, 0, 0L, java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
+        var request = InventoryServiceRequest.builder()
+                .inventory(incoming)
+                .supplierId(supplierId)
+                .build();
 
         var response = service.execute(request);
 
-        assertEquals(InventoryServiceResponse.Operation.CREATE, response.operation());
-        assertEquals(100, response.quantityDelta());
-        assertEquals(100, response.inventory().getQuantityOnHand());
+        assertEquals(InventoryServiceResponse.Operation.CREATE, response.getOperation());
+        assertEquals(100, response.getQuantityDelta());
+        assertEquals(100, response.getInventory().getQuantityOnHand());
         assertEquals(1, inventoryGateway.createCount);
         assertEquals(1, ledgerGateway.entries.size());
     }
 
     @Test
     void executeUpdatesInventoryAndReturnsActualDelta() {
+        // Existing inventory already has 100
         inventoryGateway.inventory = Optional.of(inventoryWithQuantities(100, 0));
-        var request = new InventoryServiceRequest(supplierProductId, warehouseId, 150, supplierId);
+        // Incoming wants to set it to 150
+        var incoming = new Inventory(java.util.UUID.randomUUID(), supplierProductId, warehouseId, 150, 0, 0L, java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
+        var request = InventoryServiceRequest.builder()
+                .inventory(incoming)
+                .supplierId(supplierId)
+                .build();
 
         var response = service.execute(request);
 
-        assertEquals(InventoryServiceResponse.Operation.UPDATE, response.operation());
-        assertEquals(50, response.quantityDelta());
-        assertEquals(150, response.inventory().getQuantityOnHand());
+        assertEquals(InventoryServiceResponse.Operation.UPDATE, response.getOperation());
+        assertEquals(50, response.getQuantityDelta());
+        assertEquals(150, response.getInventory().getQuantityOnHand());
         assertEquals(1, inventoryGateway.saveCount);
         assertEquals(1, ledgerGateway.entries.size());
     }
 
     @Test
     void executeRejectsUpdateBelowReservedQuantity() {
+        // Existing: 100 on hand, 80 reserved
         inventoryGateway.inventory = Optional.of(inventoryWithQuantities(100, 80));
-        var request = new InventoryServiceRequest(supplierProductId, warehouseId, 50, supplierId);
+        // Trying to reduce to 50 — below the 80 reserved
+        var incoming = new Inventory(java.util.UUID.randomUUID(), supplierProductId, warehouseId, 50, 0, 0L, java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
+        var request = InventoryServiceRequest.builder()
+                .inventory(incoming)
+                .supplierId(supplierId)
+                .build();
 
         assertThrows(InventoryValidationException.class, () -> service.execute(request));
         assertEquals(0, inventoryGateway.saveCount);
         assertEquals(0, ledgerGateway.entries.size());
     }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
 
     private Inventory inventoryWithQuantities(int quantityOnHand, int quantityReserved) {
         var now = LocalDateTime.now();
@@ -85,6 +107,10 @@ class InventoryServiceTest {
                 now
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Test doubles
+    // -------------------------------------------------------------------------
 
     private static final class FakeInventoryGateway implements InventoryGateway {
         private Optional<Inventory> inventory = Optional.empty();
@@ -109,6 +135,22 @@ class InventoryServiceTest {
             this.inventory = Optional.of(inventory);
             return inventory;
         }
+
+        @Override
+        public java.util.List<Inventory> findBySupplierProductId(UUID supplierProductId) { return java.util.Collections.emptyList(); }
+
+        @Override
+        public boolean tryReserveStock(UUID inventoryId, int qty) { return true; }
+
+        @Override
+        public void releaseStock(UUID inventoryId, int qty) {}
+
+        @Override
+        public void deductStock(UUID inventoryId, int qty) {}
+
+        @Override
+        public Optional<Inventory> findById(UUID inventoryId) { return Optional.empty(); }
+
     }
 
     private static final class RecordingLedgerGateway implements InventoryLedgerGateway {

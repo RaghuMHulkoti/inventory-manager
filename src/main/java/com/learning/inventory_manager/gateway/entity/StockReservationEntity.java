@@ -6,13 +6,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Stock Reservation entity tracking reserved inventory from customer orders.
- * Supports reservation lifecycle: PENDING -> COMMITTED -> RELEASED/CANCELLED.
- *
- * Responsibility:
- * - Persist reservation records with lifecycle tracking
- * - Link order items to inventory allocations
- * - Track expiration and commitment timestamps
+ * Stock reservation entity — holds stock during the payment window.
+ * Lifecycle status: HELD → COMMITTED | RELEASED | EXPIRED
  */
 @Entity
 @Table(name = "stock_reservations")
@@ -55,6 +50,14 @@ public class StockReservationEntity {
     @Column(name = "released_at")
     private LocalDateTime releasedAt;
 
+    /** Stable idempotency key — typically "{orderId}:{orderItemId}". */
+    @Column(name = "idempotency_key", nullable = false, unique = true, length = 80)
+    private String idempotencyKey;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -63,4 +66,3 @@ public class StockReservationEntity {
         createdAt = LocalDateTime.now();
     }
 }
-

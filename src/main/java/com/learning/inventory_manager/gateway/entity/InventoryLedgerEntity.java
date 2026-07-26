@@ -6,20 +6,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Inventory Ledger entity providing audit trail for all inventory changes.
- * Immutable record of every inventory mutation for traceability and reconciliation.
- *
- * Responsibility:
- * - Log all inventory mutations
- * - Track change type, quantity delta, and resulting quantity
- * - Maintain reference to source (order, supplier push, etc.)
- * - Enable inventory reconciliation and auditing
- *
- * Change Types:
- * - SUPPLIER_PUSH: Stock received from supplier
- * - ORDER_RESERVATION: Stock reserved for order
- * - ORDER_RELEASE: Stock released back to available
- * - ADJUSTMENT: Manual inventory adjustment
+ * Inventory ledger entity — append-only audit trail for every inventory quantity change.
  */
 @Entity
 @Table(name = "inventory_ledger")
@@ -45,8 +32,20 @@ public class InventoryLedgerEntity {
     @Column(name = "quantity_after", nullable = false)
     private Integer quantityAfter;
 
+    /** Optional link back to the reservation that caused this change. */
+    @Column(name = "reservation_id")
+    private UUID reservationId;
+
+    /** SUPPLIER, ORDER, MANUAL, RETURN, etc. */
+    @Column(name = "reference_type", length = 30)
+    private String referenceType;
+
     @Column(name = "reference_id", length = 100)
     private String referenceId;
+
+    /** Service or user that triggered the change. */
+    @Column(name = "actor", length = 80)
+    private String actor;
 
     @Column(name = "note", length = 255)
     private String note;
@@ -59,4 +58,3 @@ public class InventoryLedgerEntity {
         createdAt = LocalDateTime.now();
     }
 }
-

@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BulkInventoryUpsertUseCaseTest {
+
     private RecordingWarehouseGateway warehouseGateway;
     private FakeInventoryGateway inventoryGateway;
     private InventoryService inventoryService;
@@ -43,18 +44,22 @@ class BulkInventoryUpsertUseCaseTest {
     @Test
     void executeMapsServiceUpdateResponseIntoUsecaseResult() {
         var supplierProductId = UUID.randomUUID();
-        inventoryGateway.put(inventory(supplierProductId, warehouseId, 100));
-        var request = new BulkInventoryUpsertUsecaseRequest(
-                supplierId,
-                List.of(new BulkInventoryUpsertUsecaseRequest.Item(supplierProductId, warehouseId, 150))
-        );
+        // Pre-load existing inventory at 100
+        inventoryGateway.put(existingInventory(supplierProductId, warehouseId, 100));
+
+        // Request to push 150 — should be an UPDATE with delta = +50
+        var incomingItem = new Inventory(java.util.UUID.randomUUID(), supplierProductId, warehouseId, 150, 0, 0L, java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
+        var request = BulkInventoryUpsertUsecaseRequest.builder()
+                .supplierId(supplierId)
+                .items(List.of(incomingItem))
+                .build();
 
         var response = useCase.execute(request);
 
-        assertEquals(1, response.results().size());
-        assertEquals(BulkInventoryUpsertUsecaseResponse.Status.SUCCESS, response.results().getFirst().status());
-        assertEquals(BulkInventoryUpsertUsecaseResponse.Operation.UPDATE, response.results().getFirst().operation());
-        assertEquals(50, response.results().getFirst().quantityDelta());
+        assertEquals(1, response.getResults().size());
+        assertEquals(BulkInventoryUpsertUsecaseResponse.Status.SUCCESS, response.getResults().getFirst().getStatus());
+        assertEquals(BulkInventoryUpsertUsecaseResponse.Operation.UPDATE, response.getResults().getFirst().getOperation());
+        assertEquals(50, response.getResults().getFirst().getQuantityDelta());
     }
 
     @Test
@@ -63,22 +68,27 @@ class BulkInventoryUpsertUseCaseTest {
         var invalidProductId = UUID.randomUUID();
         var invalidWarehouseId = UUID.randomUUID();
         warehouseGateway.invalidWarehouses.add(invalidWarehouseId);
-        var request = new BulkInventoryUpsertUsecaseRequest(
-                supplierId,
-                List.of(
-                        new BulkInventoryUpsertUsecaseRequest.Item(validProductId, warehouseId, 100),
-                        new BulkInventoryUpsertUsecaseRequest.Item(invalidProductId, invalidWarehouseId, 50)
-                )
-        );
+
+        var validItem = new Inventory(java.util.UUID.randomUUID(), validProductId, warehouseId, 100, 0, 0L, java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
+        var invalidItem = new Inventory(java.util.UUID.randomUUID(), invalidProductId, invalidWarehouseId, 50, 0, 0L, java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
+
+        var request = BulkInventoryUpsertUsecaseRequest.builder()
+                .supplierId(supplierId)
+                .items(List.of(validItem, invalidItem))
+                .build();
 
         var response = useCase.execute(request);
 
-        assertEquals(2, response.results().size());
-        assertEquals(BulkInventoryUpsertUsecaseResponse.Status.SUCCESS, response.results().get(0).status());
-        assertEquals(BulkInventoryUpsertUsecaseResponse.Status.FAILED, response.results().get(1).status());
+        assertEquals(2, response.getResults().size());
+        assertEquals(BulkInventoryUpsertUsecaseResponse.Status.SUCCESS, response.getResults().get(0).getStatus());
+        assertEquals(BulkInventoryUpsertUsecaseResponse.Status.FAILED, response.getResults().get(1).getStatus());
     }
 
-    private Inventory inventory(UUID supplierProductId, UUID warehouseId, int quantityOnHand) {
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private Inventory existingInventory(UUID supplierProductId, UUID warehouseId, int quantityOnHand) {
         var now = LocalDateTime.now();
         return new Inventory(
                 UUID.randomUUID(),
@@ -92,8 +102,11 @@ class BulkInventoryUpsertUseCaseTest {
         );
     }
 
-    private record InventoryKey(UUID supplierProductId, UUID warehouseId) {
-    }
+    // -------------------------------------------------------------------------
+    // Test doubles
+    // -------------------------------------------------------------------------
+
+    private record InventoryKey(UUID supplierProductId, UUID warehouseId) {}
 
     private static final class FakeInventoryGateway implements InventoryGateway {
         private final Map<InventoryKey, Inventory> inventories = new HashMap<>();
@@ -115,12 +128,27 @@ class BulkInventoryUpsertUseCaseTest {
             return inventory;
         }
 
-        private void put(Inventory inventory) {
+        void put(Inventory inventory) {
             inventories.put(
                     new InventoryKey(inventory.getSupplierProductId(), inventory.getWarehouseId()),
                     inventory
             );
         }
+
+        @Override
+        public java.util.List<Inventory> findBySupplierProductId(UUID supplierProductId) { return java.util.Collections.emptyList(); }
+
+        @Override
+        public boolean tryReserveStock(UUID inventoryId, int qty) { return true; }
+
+        @Override
+        public void releaseStock(UUID inventoryId, int qty) {}
+
+        @Override
+        public void deductStock(UUID inventoryId, int qty) {}
+
+        @Override
+        public Optional<Inventory> findById(UUID inventoryId) { return Optional.empty(); }
     }
 
     private static final class RecordingLedgerGateway implements InventoryLedgerGateway {
@@ -136,10 +164,11 @@ class BulkInventoryUpsertUseCaseTest {
         private final Set<UUID> invalidWarehouses = new HashSet<>();
 
         @Override
-        public void validateWarehouseExists(UUID warehouseId) {
+        public boolean validateWarehouseExists(UUID warehouseId) {
             if (invalidWarehouses.contains(warehouseId)) {
                 throw new WarehouseNotFoundException(warehouseId);
             }
+            return true;
         }
     }
 }

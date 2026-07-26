@@ -1,11 +1,10 @@
 package com.learning.inventory_manager.gateway;
 
+import com.learning.inventory_manager.gateway.entity.WarehouseEntity;
+
+import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Warehouse Gateway - domain abstraction for warehouse persistence.
- */
 public interface WarehouseGateway {
-    void validateWarehouseExists(UUID warehouseId);
+    boolean validateWarehouseExists(UUID warehouseId);
 }
-

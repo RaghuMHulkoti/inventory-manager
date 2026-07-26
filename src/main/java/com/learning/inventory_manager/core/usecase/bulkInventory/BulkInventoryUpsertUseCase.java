@@ -1,5 +1,6 @@
 package com.learning.inventory_manager.core.usecase.bulkInventory;
 
+import com.learning.inventory_manager.core.domain.Inventory;
 import com.learning.inventory_manager.core.service.inventory.InventoryService;
 import com.learning.inventory_manager.core.service.inventory.InventoryServiceRequest;
 import com.learning.inventory_manager.core.service.inventory.InventoryServiceResponse;
@@ -7,14 +8,26 @@ import com.learning.inventory_manager.core.usecase.Usecase;
 import com.learning.inventory_manager.gateway.WarehouseGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.UUID;
 
-@Component
+/**
+ * Use case for bulk inventory upsert.
+ *
+ * Responsibility:
+ * - Iterate over each Inventory domain object in the request
+ * - Validate that the target warehouse exists and is active (business rule)
+ * - Delegate to InventoryService for the actual create/update logic
+ * - Isolate per-item failures so one bad item never aborts the whole batch
+ * - Return a result per item indicating success/failure and the operation performed
+ *
+ * This use case works exclusively with domain objects. No entity or web model classes
+ * are referenced here.
+ */
 public class BulkInventoryUpsertUseCase implements Usecase<BulkInventoryUpsertUsecaseRequest, BulkInventoryUpsertUsecaseResponse> {
+
     private static final Logger log = LoggerFactory.getLogger(BulkInventoryUpsertUseCase.class);
+
     private final WarehouseGateway warehouseGateway;
     private final InventoryService inventoryService;
 
@@ -26,68 +39,72 @@ public class BulkInventoryUpsertUseCase implements Usecase<BulkInventoryUpsertUs
     @Override
     public BulkInventoryUpsertUsecaseResponse execute(BulkInventoryUpsertUsecaseRequest request) {
         log.info("Starting bulk inventory upsert for supplier: {} with {} items",
-                request.supplierId(), request.items().size());
+                request.getSupplierId(), request.getItems().size());
 
         var results = new ArrayList<BulkInventoryUpsertUsecaseResponse.ItemResult>();
 
-        for (BulkInventoryUpsertUsecaseRequest.Item item : request.items()) {
+        for (Inventory inventory : request.getItems()) {
             try {
-                var result = processInventoryItem(request.supplierId(), item);
-                results.add(result);
+                results.add(processInventoryItem(request.getSupplierId(), inventory));
             } catch (Exception e) {
-                log.error("Error processing inventory item - product: {}, warehouse: {}",
-                        item.supplierProductId(), item.warehouseId(), e);
+                log.error("Error processing inventory item — product: {}, warehouse: {}",
+                        inventory.getSupplierProductId(), inventory.getWarehouseId(), e);
 
-                var failureResult = BulkInventoryUpsertUsecaseResponse.ItemResult.failure(
-                        item.supplierProductId(),
-                        item.warehouseId(),
+                results.add(BulkInventoryUpsertUsecaseResponse.ItemResult.failure(
+                        inventory.getSupplierProductId(),
+                        inventory.getWarehouseId(),
                         e.getMessage()
-                );
-                results.add(failureResult);
+                ));
             }
         }
 
-        log.info("Bulk inventory upsert completed. Successes: {}, Failures: {}",
-                results.stream()
-                        .filter(r -> r.status() == BulkInventoryUpsertUsecaseResponse.Status.SUCCESS)
-                        .count(),
-                results.stream()
-                        .filter(r -> r.status() == BulkInventoryUpsertUsecaseResponse.Status.FAILED)
-                        .count());
+        long successCount = results.stream()
+                .filter(r -> r.getStatus() == BulkInventoryUpsertUsecaseResponse.Status.SUCCESS)
+                .count();
+        long failureCount = results.stream()
+                .filter(r -> r.getStatus() == BulkInventoryUpsertUsecaseResponse.Status.FAILED)
+                .count();
 
-        return new BulkInventoryUpsertUsecaseResponse(results);
+        log.info("Bulk inventory upsert completed. Successes: {}, Failures: {}", successCount, failureCount);
+
+        return BulkInventoryUpsertUsecaseResponse.builder()
+                .results(results)
+                .build();
     }
 
     private BulkInventoryUpsertUsecaseResponse.ItemResult processInventoryItem(
             UUID supplierId,
-            BulkInventoryUpsertUsecaseRequest.Item item
+            Inventory inventory
     ) {
-        log.debug("Processing inventory item - product: {}, warehouse: {}, quantity: {}",
-                item.supplierProductId(), item.warehouseId(), item.quantityOnHand());
+        log.debug("Processing inventory item — product: {}, warehouse: {}, quantity: {}",
+                inventory.getSupplierProductId(), inventory.getWarehouseId(), inventory.getQuantityOnHand());
 
-        // Step 1: Validate warehouse exists and is active
-        warehouseGateway.validateWarehouseExists(item.warehouseId());
-        log.debug("Warehouse validation passed for: {}", item.warehouseId());
+        // Business validation: warehouse must exist and be active
+        warehouseGateway.validateWarehouseExists(inventory.getWarehouseId());
+        log.debug("Warehouse validation passed for: {}", inventory.getWarehouseId());
 
-        var response = inventoryService.execute(new InventoryServiceRequest(
-                item.supplierProductId(),
-                item.warehouseId(),
-                item.quantityOnHand(),
-                supplierId
-        ));
+        InventoryServiceRequest request = buildInventoryServiceRequest(inventory, supplierId);
+        InventoryServiceResponse response = inventoryService.execute(request);
 
-        if (response.operation() == InventoryServiceResponse.Operation.UPDATE) {
+        if (response.getOperation() == InventoryServiceResponse.Operation.UPDATE) {
             return BulkInventoryUpsertUsecaseResponse.ItemResult.successUpdate(
-                    item.supplierProductId(),
-                    item.warehouseId(),
-                    response.quantityDelta()
+                    inventory.getSupplierProductId(),
+                    inventory.getWarehouseId(),
+                    response.getQuantityDelta()
             );
         }
 
         return BulkInventoryUpsertUsecaseResponse.ItemResult.successCreate(
-                item.supplierProductId(),
-                item.warehouseId(),
-                response.quantityDelta()
+                inventory.getSupplierProductId(),
+                inventory.getWarehouseId(),
+                response.getQuantityDelta()
         );
+    }
+
+    private InventoryServiceRequest buildInventoryServiceRequest(Inventory inventory, UUID supplierId) {
+        return InventoryServiceRequest.builder()
+                .inventory(inventory)
+                .supplierId(supplierId)
+                .build();
     }
 }

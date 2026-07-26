@@ -1,44 +1,13 @@
 package com.learning.inventory_manager.web.mapper;
 
-import com.learning.inventory_manager.core.domain.Inventory;
-import com.learning.inventory_manager.gateway.entity.InventoryEntity;
-import org.springframework.stereotype.Component;
-
 /**
- * Mapper for converting between InventoryEntity (JPA) and Inventory (domain model).
- * Provides bidirectional mapping to isolate domain logic from persistence details.
+ * @deprecated This class has been split into two focused mappers:
+ * <ul>
+ *   <li>{@link InventoryWebMapper} — converts web request models to domain objects (web layer)</li>
+ *   <li>{@link com.learning.inventory_manager.gateway.InventoryEntityMapper} — converts domain ↔ JPA entity (gateway layer)</li>
+ * </ul>
  */
-@Component
+@Deprecated
 public class InventoryMapper {
-    
-    public Inventory toDomain(InventoryEntity entity) {
-        if (entity == null) return null;
-        
-        return new Inventory(
-            entity.getId(),
-            entity.getSupplierProductId(),
-            entity.getWarehouseId(),
-            entity.getQuantityOnHand(),
-            entity.getQuantityReserved(),
-            entity.getVersion(),
-            entity.getCreatedAt(),
-            entity.getUpdatedAt()
-        );
-    }
-
-    public InventoryEntity toEntity(Inventory domain) {
-        if (domain == null) return null;
-        
-        return InventoryEntity.builder()
-            .id(domain.getId())
-            .supplierProductId(domain.getSupplierProductId())
-            .warehouseId(domain.getWarehouseId())
-            .quantityOnHand(domain.getQuantityOnHand())
-            .quantityReserved(domain.getQuantityReserved())
-            .version(domain.getVersion())
-            .createdAt(domain.getCreatedAt())
-            .updatedAt(domain.getUpdatedAt())
-            .build();
-    }
+    // Intentionally empty — see Javadoc above.
 }
-

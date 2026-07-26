@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>📦 Inventory Manager (Project Bazaar)</h1>
+  <h1>📦 Inventory Manager</h1>
   <p><em>The source of truth for stock, reservations, and fulfilment logic.</em></p>
 
   ![Java](https://img.shields.io/badge/Java-21-blue.svg)
@@ -13,7 +13,7 @@
 
 ## 📖 Overview
 
-The **Inventory Service** is a core microservice in the **Project Bazaar** E-Commerce Marketplace platform. It serves as the absolute single source of truth for stock availability across all suppliers and warehouses.
+The **Inventory Service** is a core microservice in our E-Commerce Marketplace platform. It serves as the absolute single source of truth for stock availability across all suppliers and warehouses.
 
 Unlike monolithic catalogs, this service is explicitly decoupled from product definitions and pricing. Its sole responsibility is guaranteeing the strongest promise in commerce: **no overselling, no double-charging, and no lost orders.**
 
@@ -21,14 +21,14 @@ Unlike monolithic catalogs, this service is explicitly decoupled from product de
 
 - **Reservation-Based Stock:** Holds stock temporarily during the checkout window using TTL-based reservations to prevent overselling without permanently blocking inventory.
 - **Optimistic Locking:** Designed for massive concurrency and flash-sale bursts using `@Version` fields.
-- **Hexagonal Architecture:** Strict separation of core business logic (Processors, UseCases) from infrastructure (Gateways, Controllers).
+- **Clean Architecture:** Strict separation of core business logic (Processors, UseCases) from infrastructure (Gateways, Controllers).
 - **Event-Driven Resilience:** Integrates with Kafka via the Transactional Outbox pattern, publishing state changes (`INVENTORY_RESERVED`, `INVENTORY_DEDUCTED`) with 100% atomicity.
 - **Audit Ledger:** Maintains an append-only `inventory_ledger` for tracking every single stock movement, ensuring total financial and operational traceability.
 - **Bulk Operations:** Highly optimized bulk upsert APIs for suppliers syncing thousands of SKUs at once.
 
 ## 🏗️ Architecture
 
-This service is built using **Hexagonal (Ports and Adapters) Architecture**. 
+This service is built using **Clean Architecture**.
 - **Core Domain:** Pure Java objects (`Inventory`, `InventoryLedgerEntry`). Contains no framework dependencies.
 - **Ports (Interfaces):** Defines how the outside world talks to the core (`Usecases`, `Processors`) and how the core talks to the outside world (`Gateways`).
 - **Adapters:** REST Controllers, Spring Data JPA Repositories, Kafka Producers.

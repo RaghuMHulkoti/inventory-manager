@@ -33,13 +33,194 @@ This service is built using **Clean Architecture**.
 - **Ports (Interfaces):** Defines how the outside world talks to the core (`Usecases`, `Processors`) and how the core talks to the outside world (`Gateways`).
 - **Adapters:** REST Controllers, Spring Data JPA Repositories, Kafka Producers.
 
+### High-Level Architecture
+
+```mermaid
+flowchart TB
+    subgraph Clients
+        Web[Web App]
+        Mob[Mobile Apps iOS/Android]
+        SP[Seller Portal]
+        Adm[Admin Console]
+    end
+
+    CDN[CDN / Edge Cache]
+    WAF[WAF + DDoS Shield]
+    GW[API Gateway<br/>Spring Cloud Gateway]
+
+    subgraph Edge
+        Auth[Auth/OAuth2<br/>Keycloak / Cognito]
+    end
+
+    subgraph CoreServices["Core Microservices (Java 21 + Spring Boot)"]
+        US[User Service]
+        PS[Product Service]
+        SS[Supplier Service]
+        INV[Inventory Service]
+        CART[Cart Service]
+        OS[Order Service]
+        PAY[Payment Service]
+        NOT[Notification Service]
+        SRCH[Search Service]
+    end
+
+    subgraph SupportingServices["Supporting Services"]
+        REC[Recommendation]
+        SHIP[Shipping]
+        COUP[Coupon]
+        REV[Review]
+        ANL[Analytics]
+    end
+
+    subgraph DataPlane["Data Stores"]
+        PGU[(Postgres<br/>users)]
+        PGP[(Postgres<br/>products)]
+        PGS[(Postgres<br/>suppliers)]
+        PGI[(Postgres<br/>inventory)]
+        PGO[(Postgres<br/>orders)]
+        PGPAY[(Postgres<br/>payments)]
+        REDIS[(Redis Cluster<br/>cache/session/locks)]
+        ES[(Elasticsearch<br/>catalog index)]
+        S3[(Object Store<br/>S3)]
+    end
+
+    subgraph Messaging
+        KAFKA[(Apache Kafka<br/>event backbone)]
+    end
+
+    subgraph External
+        Stripe[Stripe]
+        Razor[Razorpay]
+        Carriers[Shipping Carriers]
+        SMTP[SMTP/SES]
+        SMSP[SMS Provider]
+        FCM[FCM/APNs]
+    end
+
+    Web & Mob & SP & Adm --> CDN --> WAF --> GW
+    GW --> Auth
+    GW --> US & PS & SS & INV & CART & OS & PAY & SRCH
+    GW --> REC & SHIP & COUP & REV
+
+    US --> PGU
+    PS --> PGP
+    SS --> PGS
+    INV --> PGI
+    OS --> PGO
+    PAY --> PGPAY
+    CART --> REDIS
+    SRCH --> ES
+
+    US & PS & SS & INV & CART & OS & PAY & NOT & SRCH & REC & REV & ANL <--> KAFKA
+
+    PAY <--> Stripe & Razor
+    SHIP <--> Carriers
+    NOT --> SMTP & SMSP & FCM
+
+    PS --> S3
+```
+
 ### Database Design
-The service owns the `inventory_db` PostgreSQL database, partitioned logically around:
-* `warehouses`
-* `inventory` (rows per `supplier_product` × `warehouse`)
-* `stock_reservations`
-* `inventory_ledger` (append-only audit)
-* `inventory_outbox`
+
+The service owns the `inventory_db` PostgreSQL database, partitioned logically around warehouses, inventory records, stock reservations, ledger, and outbox.
+
+#### ER Diagram
+
+```mermaid
+erDiagram
+    WAREHOUSES ||--o{ INVENTORY : stocks
+    INVENTORY  ||--o{ STOCK_RESERVATIONS : holds
+    INVENTORY  ||--o{ INVENTORY_LEDGER : audits
+```
+
+#### SQL Schema
+
+```sql
+-- =====================================================================
+-- INVENTORY DB  (SOURCE OF TRUTH FOR STOCK)
+-- =====================================================================
+CREATE TABLE warehouses (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    supplier_id  UUID NOT NULL,                       -- ref to Supplier Service
+    code         VARCHAR(40) NOT NULL,
+    name         VARCHAR(120) NOT NULL,
+    country      CHAR(2) NOT NULL,
+    region       VARCHAR(60),
+    is_active    BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (supplier_id, code)
+);
+CREATE INDEX idx_wh_supplier ON warehouses (supplier_id);
+
+-- one row PER (supplier_product, warehouse)
+CREATE TABLE inventory (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    supplier_product_id UUID NOT NULL,                -- ref to Supplier Service
+    warehouse_id        UUID NOT NULL REFERENCES warehouses(id),
+    quantity_on_hand    INT  NOT NULL CHECK (quantity_on_hand >= 0),
+    quantity_reserved   INT  NOT NULL DEFAULT 0 CHECK (quantity_reserved >= 0),
+    safety_stock        INT  NOT NULL DEFAULT 0,
+    reorder_point       INT  NOT NULL DEFAULT 0,
+    last_restocked_at   TIMESTAMPTZ,
+    version             BIGINT NOT NULL DEFAULT 0,    -- optimistic lock
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT chk_qty_reserved_le_onhand CHECK (quantity_reserved <= quantity_on_hand),
+    UNIQUE (supplier_product_id, warehouse_id)
+);
+-- "available_qty" is derived: quantity_on_hand - quantity_reserved
+CREATE INDEX idx_inv_supplier_product ON inventory (supplier_product_id);
+CREATE INDEX idx_inv_low_stock ON inventory (supplier_product_id) WHERE (quantity_on_hand - quantity_reserved) <= safety_stock;
+
+CREATE TABLE stock_reservations (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id            UUID NOT NULL,
+    order_item_id       UUID NOT NULL,
+    inventory_id        UUID NOT NULL REFERENCES inventory(id),
+    supplier_product_id UUID NOT NULL,
+    warehouse_id        UUID NOT NULL,
+    quantity            INT  NOT NULL CHECK (quantity > 0),
+    status              VARCHAR(20) NOT NULL DEFAULT 'HELD'
+                        CHECK (status IN ('HELD','RELEASED','COMMITTED','EXPIRED')),
+    expires_at          TIMESTAMPTZ NOT NULL,
+    committed_at        TIMESTAMPTZ,
+    released_at         TIMESTAMPTZ,
+    idempotency_key     VARCHAR(80) NOT NULL,
+    version             BIGINT NOT NULL DEFAULT 0,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (idempotency_key)
+);
+CREATE INDEX idx_resv_order        ON stock_reservations (order_id);
+CREATE INDEX idx_resv_status_exp   ON stock_reservations (status, expires_at);
+CREATE INDEX idx_resv_inv          ON stock_reservations (inventory_id) WHERE status = 'HELD';
+
+CREATE TABLE inventory_ledger (
+    id                  BIGSERIAL PRIMARY KEY,
+    inventory_id        UUID NOT NULL REFERENCES inventory(id),
+    change_type         VARCHAR(30) NOT NULL
+                        CHECK (change_type IN ('RESTOCK','RESERVE','RELEASE','DEDUCT','ADJUSTMENT_PLUS','ADJUSTMENT_MINUS','RETURN')),
+    quantity_delta      INT NOT NULL,
+    quantity_after      INT NOT NULL,
+    reservation_id      UUID,
+    reference_type      VARCHAR(30),                   -- ORDER, RETURN, MANUAL...
+    reference_id        VARCHAR(80),
+    actor               VARCHAR(80),
+    note                TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_ledger_inv_time ON inventory_ledger (inventory_id, created_at DESC);
+
+CREATE TABLE inventory_outbox (
+    id          BIGSERIAL PRIMARY KEY,
+    aggregate_id UUID NOT NULL,
+    event_type   VARCHAR(60) NOT NULL,
+    payload      JSONB NOT NULL,
+    status       VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    sent_at      TIMESTAMPTZ
+);
+CREATE INDEX idx_inv_outbox_pending ON inventory_outbox (status, created_at) WHERE status = 'PENDING';
+```
 
 ## 🚀 Getting Started
 

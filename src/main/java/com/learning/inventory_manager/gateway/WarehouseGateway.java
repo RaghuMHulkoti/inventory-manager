@@ -1,10 +1,13 @@
 package com.learning.inventory_manager.gateway;
 
-import com.learning.inventory_manager.gateway.entity.WarehouseEntity;
-
-import java.util.Optional;
 import java.util.UUID;
 
 public interface WarehouseGateway {
-    boolean validateWarehouseExists(UUID warehouseId);
+
+    /**
+     * Ensures the warehouse exists and is active.
+     *
+     * @throws com.learning.inventory_manager.exception.WarehouseNotFoundException if not
+     */
+    void validateWarehouseExists(UUID warehouseId);
 }

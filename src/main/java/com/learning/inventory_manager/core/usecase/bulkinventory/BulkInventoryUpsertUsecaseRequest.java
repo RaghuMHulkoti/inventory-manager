@@ -1,4 +1,4 @@
-package com.learning.inventory_manager.core.usecase.bulkInventory;
+package com.learning.inventory_manager.core.usecase.bulkinventory;
 
 import com.learning.inventory_manager.core.domain.Inventory;
 import com.learning.inventory_manager.core.usecase.UsecaseRequest;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Request for {@link BulkInventoryUpsertUseCase}.
+ * Request for {@link BulkInventoryUpsertUsecase}.
  *
  * Carries a list of fully-constructed {@link Inventory} domain objects (converted at the
  * controller boundary) together with the supplierId for attribution and ledger entries.

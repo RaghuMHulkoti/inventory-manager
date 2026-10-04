@@ -5,6 +5,7 @@ import com.learning.inventory_manager.core.usecase.inventory.ReleaseInventoryUse
 import com.learning.inventory_manager.core.usecase.inventory.ReleaseInventoryUsecaseRequest;
 import com.learning.inventory_manager.core.usecase.inventory.ReleaseInventoryUsecaseResponse;
 import lombok.RequiredArgsConstructor;
+
 @RequiredArgsConstructor
 public class ReleaseInventoryProcessor implements Processor<ReleaseInventoryProcessorRequest, ReleaseInventoryProcessorResponse> {
 

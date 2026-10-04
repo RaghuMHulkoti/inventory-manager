@@ -1,4 +1,4 @@
-package com.learning.inventory_manager.core.usecase.bulkInventory;
+package com.learning.inventory_manager.core.usecase.bulkinventory;
 
 import com.learning.inventory_manager.core.domain.Inventory;
 import com.learning.inventory_manager.core.service.inventory.InventoryService;
@@ -24,14 +24,14 @@ import java.util.UUID;
  * This use case works exclusively with domain objects. No entity or web model classes
  * are referenced here.
  */
-public class BulkInventoryUpsertUseCase implements Usecase<BulkInventoryUpsertUsecaseRequest, BulkInventoryUpsertUsecaseResponse> {
+public class BulkInventoryUpsertUsecase implements Usecase<BulkInventoryUpsertUsecaseRequest, BulkInventoryUpsertUsecaseResponse> {
 
-    private static final Logger log = LoggerFactory.getLogger(BulkInventoryUpsertUseCase.class);
+    private static final Logger log = LoggerFactory.getLogger(BulkInventoryUpsertUsecase.class);
 
     private final WarehouseGateway warehouseGateway;
     private final InventoryService inventoryService;
 
-    public BulkInventoryUpsertUseCase(WarehouseGateway warehouseGateway, InventoryService inventoryService) {
+    public BulkInventoryUpsertUsecase(WarehouseGateway warehouseGateway, InventoryService inventoryService) {
         this.warehouseGateway = warehouseGateway;
         this.inventoryService = inventoryService;
     }

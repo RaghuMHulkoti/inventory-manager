@@ -5,6 +5,7 @@ import com.learning.inventory_manager.core.usecase.inventory.ReserveInventoryUse
 import com.learning.inventory_manager.core.usecase.inventory.ReserveInventoryUsecaseRequest;
 import com.learning.inventory_manager.core.usecase.inventory.ReserveInventoryUsecaseResponse;
 import lombok.RequiredArgsConstructor;
+
 @RequiredArgsConstructor
 public class ReserveInventoryProcessor implements Processor<ReserveInventoryProcessorRequest, ReserveInventoryProcessorResponse> {
 

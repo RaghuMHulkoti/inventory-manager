@@ -1,5 +1,6 @@
 package com.learning.inventory_manager.core.service.inventory;
 
+import com.learning.inventory_manager.core.service.ServiceRequest;
 import com.learning.inventory_manager.core.domain.DeductItem;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +14,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DeductInventoryServiceRequest implements com.learning.inventory_manager.core.service.ServiceRequest {
+public class DeductInventoryServiceRequest implements ServiceRequest {
     private UUID orderId;
     private List<DeductItem> items;
 }

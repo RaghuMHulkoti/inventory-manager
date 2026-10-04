@@ -1,5 +1,6 @@
 package com.learning.inventory_manager.core.service.inventory;
 
+import com.learning.inventory_manager.core.service.ServiceRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,6 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GetInventoryServiceRequest implements com.learning.inventory_manager.core.service.ServiceRequest {
+public class GetInventoryServiceRequest implements ServiceRequest {
     private UUID supplierProductId;
 }

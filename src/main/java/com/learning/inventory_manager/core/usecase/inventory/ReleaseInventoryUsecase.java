@@ -3,12 +3,15 @@ package com.learning.inventory_manager.core.usecase.inventory;
 import com.learning.inventory_manager.core.service.inventory.ReleaseInventoryServiceRequest;
 import com.learning.inventory_manager.core.service.inventory.ReleaseInventoryServiceResponse;
 import com.learning.inventory_manager.core.service.inventory.ReleaseInventoryService;
+import com.learning.inventory_manager.core.usecase.Usecase;
 import lombok.RequiredArgsConstructor;
+
 @RequiredArgsConstructor
-public class ReleaseInventoryUsecase {
+public class ReleaseInventoryUsecase implements Usecase<ReleaseInventoryUsecaseRequest, ReleaseInventoryUsecaseResponse> {
 
     private final ReleaseInventoryService releaseInventoryService;
 
+    @Override
     public ReleaseInventoryUsecaseResponse execute(ReleaseInventoryUsecaseRequest request) {
         var serviceRequest = buildReleaseInventoryServiceRequest(request);
         var serviceResponse = releaseInventoryService.execute(serviceRequest);

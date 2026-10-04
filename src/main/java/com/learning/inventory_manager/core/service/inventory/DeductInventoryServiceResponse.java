@@ -1,5 +1,6 @@
 package com.learning.inventory_manager.core.service.inventory;
 
+import com.learning.inventory_manager.core.service.ServiceResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +13,6 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DeductInventoryServiceResponse implements com.learning.inventory_manager.core.service.ServiceResponse {
+public class DeductInventoryServiceResponse implements ServiceResponse {
     private List<UUID> deductedReservationIds;
 }

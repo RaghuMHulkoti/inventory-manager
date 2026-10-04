@@ -26,7 +26,7 @@ public class InventoryServiceRequest implements ServiceRequest {
 
     /**
      * The Inventory domain object containing supplierProductId, warehouseId, and quantityOnHand.
-     * Created by the controller via {@link Inventory#create} before entering the domain layers.
+     * Created by {@link com.learning.inventory_manager.web.mapper.InventoryWebMapper} before entering the domain layers.
      */
     private Inventory inventory;
 

@@ -5,6 +5,7 @@ import com.learning.inventory_manager.core.usecase.inventory.GetAvailabilityUsec
 import com.learning.inventory_manager.core.usecase.inventory.GetAvailabilityUsecaseRequest;
 import com.learning.inventory_manager.core.usecase.inventory.GetAvailabilityUsecaseResponse;
 import lombok.RequiredArgsConstructor;
+
 @RequiredArgsConstructor
 public class GetAvailabilityProcessor implements Processor<GetAvailabilityProcessorRequest, GetAvailabilityProcessorResponse> {
 

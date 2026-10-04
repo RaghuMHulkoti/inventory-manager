@@ -5,6 +5,7 @@ import com.learning.inventory_manager.core.usecase.inventory.DeductInventoryUsec
 import com.learning.inventory_manager.core.usecase.inventory.DeductInventoryUsecaseRequest;
 import com.learning.inventory_manager.core.usecase.inventory.DeductInventoryUsecaseResponse;
 import lombok.RequiredArgsConstructor;
+
 @RequiredArgsConstructor
 public class DeductInventoryProcessor implements Processor<DeductInventoryProcessorRequest, DeductInventoryProcessorResponse> {
 

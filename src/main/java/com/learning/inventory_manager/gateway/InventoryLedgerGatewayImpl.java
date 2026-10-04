@@ -1,6 +1,7 @@
 package com.learning.inventory_manager.gateway;
 
 import com.learning.inventory_manager.core.domain.InventoryLedgerEntry;
+
 public class InventoryLedgerGatewayImpl implements InventoryLedgerGateway {
 
     private final InventoryLedgerRepository repository;

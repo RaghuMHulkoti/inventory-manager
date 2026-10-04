@@ -1,4 +1,4 @@
-package com.learning.inventory_manager.core.usecase.bulkInventory;
+package com.learning.inventory_manager.core.usecase.bulkinventory;
 
 import com.learning.inventory_manager.core.domain.Inventory;
 import com.learning.inventory_manager.core.domain.InventoryLedgerEntry;
@@ -22,12 +22,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class BulkInventoryUpsertUseCaseTest {
+class BulkInventoryUpsertUsecaseTest {
 
     private RecordingWarehouseGateway warehouseGateway;
     private FakeInventoryGateway inventoryGateway;
     private InventoryService inventoryService;
-    private BulkInventoryUpsertUseCase useCase;
+    private BulkInventoryUpsertUsecase useCase;
     private UUID supplierId;
     private UUID warehouseId;
 
@@ -36,7 +36,7 @@ class BulkInventoryUpsertUseCaseTest {
         warehouseGateway = new RecordingWarehouseGateway();
         inventoryGateway = new FakeInventoryGateway();
         inventoryService = new InventoryService(inventoryGateway, new RecordingLedgerGateway());
-        useCase = new BulkInventoryUpsertUseCase(warehouseGateway, inventoryService);
+        useCase = new BulkInventoryUpsertUsecase(warehouseGateway, inventoryService);
         supplierId = UUID.randomUUID();
         warehouseId = UUID.randomUUID();
     }
@@ -164,11 +164,10 @@ class BulkInventoryUpsertUseCaseTest {
         private final Set<UUID> invalidWarehouses = new HashSet<>();
 
         @Override
-        public boolean validateWarehouseExists(UUID warehouseId) {
+        public void validateWarehouseExists(UUID warehouseId) {
             if (invalidWarehouses.contains(warehouseId)) {
                 throw new WarehouseNotFoundException(warehouseId);
             }
-            return true;
         }
     }
 }

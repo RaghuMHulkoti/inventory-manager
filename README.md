@@ -241,9 +241,9 @@ CREATE INDEX idx_inv_outbox_pending ON inventory_outbox (status, created_at) WHE
    ./mvnw clean verify
    ```
 
-3. **Run the Spring Boot application:**
+3. **Run the Spring Boot application** (DB settings come from env vars; `DB_URL` and `DB_USERNAME` have local defaults):
    ```bash
-   ./mvnw spring-boot:run
+   DB_PASSWORD=postgres ./mvnw spring-boot:run
    ```
 
 ## 🔌 API Endpoints

@@ -1,5 +1,6 @@
 package com.learning.inventory_manager.core.service.inventory;
 
+import com.learning.inventory_manager.core.service.ServiceResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +13,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GetAvailabilityServiceResponse implements com.learning.inventory_manager.core.service.ServiceResponse {
+public class GetAvailabilityServiceResponse implements ServiceResponse {
     private UUID productId;
     private int totalAvailable;
     // Key: supplierProductId, Value: Map of warehouseId -> availableQuantity

@@ -1,4 +1,4 @@
-package com.learning.inventory_manager.core.usecase.bulkInventory;
+package com.learning.inventory_manager.core.usecase.bulkinventory;
 
 import com.learning.inventory_manager.core.usecase.UsecaseResponse;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Response from {@link BulkInventoryUpsertUseCase}.
+ * Response from {@link BulkInventoryUpsertUsecase}.
  * Contains a result for each inventory item that was processed.
  */
 @Data

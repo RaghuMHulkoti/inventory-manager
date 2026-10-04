@@ -2,6 +2,7 @@ package com.learning.inventory_manager.core.service.inventory;
 
 import com.learning.inventory_manager.core.service.Service;
 import com.learning.inventory_manager.gateway.InventoryGateway;
+
 public class GetInventoryService implements Service<GetInventoryServiceRequest, GetInventoryServiceResponse> {
 
     private final InventoryGateway inventoryGateway;

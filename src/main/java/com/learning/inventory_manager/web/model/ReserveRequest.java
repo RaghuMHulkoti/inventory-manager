@@ -3,6 +3,7 @@ package com.learning.inventory_manager.web.model;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 import java.util.List;
@@ -17,5 +18,6 @@ public class ReserveRequest {
     @Valid
     private List<ReserveItemRequest> items;
 
+    @Positive(message = "ttlSeconds must be greater than 0")
     private long ttlSeconds = 600;
 }

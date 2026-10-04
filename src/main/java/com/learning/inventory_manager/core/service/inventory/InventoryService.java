@@ -2,6 +2,7 @@ package com.learning.inventory_manager.core.service.inventory;
 
 import com.learning.inventory_manager.core.domain.Inventory;
 import com.learning.inventory_manager.core.domain.InventoryLedgerEntry;
+import com.learning.inventory_manager.core.domain.InventoryLedgerEntry.ChangeType;
 import com.learning.inventory_manager.core.service.Service;
 import com.learning.inventory_manager.gateway.InventoryGateway;
 import com.learning.inventory_manager.gateway.InventoryLedgerGateway;
@@ -41,7 +42,7 @@ public class InventoryService implements Service<InventoryServiceRequest, Invent
                     0,
                     incoming.getSafetyStock() != null ? incoming.getSafetyStock() : 0,
                     incoming.getReorderPoint() != null ? incoming.getReorderPoint() : 0,
-                    0L,
+                    null, // null version = new row; JPA sets it on insert
                     LocalDateTime.now(),
                     LocalDateTime.now(),
                     null
@@ -51,7 +52,7 @@ public class InventoryService implements Service<InventoryServiceRequest, Invent
 
             var ledgerEntry = InventoryLedgerEntry.builder()
                     .inventoryId(created.getId())
-                    .changeType("SUPPLIER_PUSH")
+                    .changeType(ChangeType.SUPPLIER_PUSH)
                     .quantityDelta(created.getQuantityOnHand())
                     .quantityAfter(created.getQuantityOnHand())
                     .referenceType("SUPPLIER")
@@ -77,9 +78,9 @@ public class InventoryService implements Service<InventoryServiceRequest, Invent
         }
 
         existing.setQuantityOnHand(incoming.getQuantityOnHand());
-        
-        if (incoming.getSafetyStock() != null && incoming.getReorderPoint() != null && 
-            (incoming.getSafetyStock() > 0 || incoming.getReorderPoint() > 0)) {
+
+        // Null means "not sent by caller" — keep the stored threshold
+        if (incoming.getSafetyStock() != null || incoming.getReorderPoint() != null) {
             existing.setThresholds(incoming.getSafetyStock(), incoming.getReorderPoint());
         }
 
@@ -88,7 +89,7 @@ public class InventoryService implements Service<InventoryServiceRequest, Invent
         if (delta != 0) {
             var ledgerEntry = InventoryLedgerEntry.builder()
                     .inventoryId(updated.getId())
-                    .changeType("SUPPLIER_PUSH")
+                    .changeType(ChangeType.SUPPLIER_PUSH)
                     .quantityDelta(delta)
                     .quantityAfter(updated.getQuantityOnHand())
                     .referenceType("SUPPLIER")

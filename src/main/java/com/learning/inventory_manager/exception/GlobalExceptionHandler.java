@@ -6,11 +6,16 @@ import com.learning.inventory_manager.web.response.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -29,74 +34,65 @@ public class GlobalExceptionHandler {
      * Handle validation errors (request format).
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Response<ErrorResponse>> handleValidationException(
-            MethodArgumentNotValidException ex
-    ) {
+    public ResponseEntity<Response<ErrorResponse>> handleValidationException(MethodArgumentNotValidException ex) {
         log.warn("Validation error: {}", ex.getMessage());
 
         Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
+        // Class-level constraints produce ObjectErrors, not FieldErrors — key them by object name
+        ex.getBindingResult().getAllErrors().forEach(error -> errors.put(
+                error instanceof FieldError fieldError ? fieldError.getField() : error.getObjectName(),
+                error.getDefaultMessage()));
 
-        var errorResponse = ErrorResponse.builder()
-                .errorCode("VALIDATION_ERROR")
-                .message("Request validation failed")
-                .status(HttpStatus.BAD_REQUEST.value())
-                .timestamp(LocalDateTime.now())
-                .details(errors)
-                .build();
-
-        return new ResponseEntity<>(new Response<>(StatusCode.FAILURE, "Request validation failed", errorResponse), HttpStatus.BAD_REQUEST);
+        return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Request validation failed", errors);
     }
 
     /**
-     * Handle warehouse not found errors.
+     * Handle malformed requests: unreadable JSON, missing or wrongly typed parameters/headers.
      */
+    @ExceptionHandler({
+            HttpMessageNotReadableException.class,
+            MissingServletRequestParameterException.class,
+            MissingRequestHeaderException.class,
+            MethodArgumentTypeMismatchException.class
+    })
+    public ResponseEntity<Response<ErrorResponse>> handleBadRequest(Exception ex) {
+        log.warn("Malformed request: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Malformed request: check body, parameters and headers", null);
+    }
+
+    @ExceptionHandler(InventoryValidationException.class)
+    public ResponseEntity<Response<ErrorResponse>> handleInventoryValidation(InventoryValidationException ex) {
+        log.warn("Inventory validation failed: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", ex.getMessage(), null);
+    }
+
     @ExceptionHandler(WarehouseNotFoundException.class)
-    public ResponseEntity<Response<ErrorResponse>> handleWarehouseNotFound(
-            WarehouseNotFoundException ex
-    ) {
+    public ResponseEntity<Response<ErrorResponse>> handleWarehouseNotFound(WarehouseNotFoundException ex) {
         log.warn("Warehouse not found: {}", ex.getMessage());
-
-        var errorResponse = ErrorResponse.builder()
-                .errorCode("WAREHOUSE_NOT_FOUND")
-                .message(ex.getMessage())
-                .status(HttpStatus.NOT_FOUND.value())
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        return new ResponseEntity<>(new Response<>(StatusCode.FAILURE, ex.getMessage(), errorResponse), HttpStatus.NOT_FOUND);
+        return build(HttpStatus.NOT_FOUND, "WAREHOUSE_NOT_FOUND", ex.getMessage(), null);
     }
 
-    /**
-     * Handle optimistic locking failures.
-     */
+    @ExceptionHandler(InventoryNotFoundException.class)
+    public ResponseEntity<Response<ErrorResponse>> handleInventoryNotFound(InventoryNotFoundException ex) {
+        log.warn("Inventory not found: {}", ex.getMessage());
+        return build(HttpStatus.NOT_FOUND, "INVENTORY_NOT_FOUND", ex.getMessage(), null);
+    }
+
+    @ExceptionHandler(ReservationNotFoundException.class)
+    public ResponseEntity<Response<ErrorResponse>> handleReservationNotFound(ReservationNotFoundException ex) {
+        log.warn("Reservation not found: {}", ex.getMessage());
+        return build(HttpStatus.NOT_FOUND, "RESERVATION_NOT_FOUND", ex.getMessage(), null);
+    }
+
     @ExceptionHandler(OptimisticLockingException.class)
-    public ResponseEntity<Response<ErrorResponse>> handleOptimisticLocking(
-            OptimisticLockingException ex
-    ) {
+    public ResponseEntity<Response<ErrorResponse>> handleOptimisticLocking(OptimisticLockingException ex) {
         log.warn("Optimistic locking failure: {}", ex.getMessage());
-
-        var errorResponse = ErrorResponse.builder()
-                .errorCode("OPTIMISTIC_LOCKING_FAILURE")
-                .message("The resource has been modified by another process. Please retry.")
-                .status(HttpStatus.CONFLICT.value())
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        return new ResponseEntity<>(new Response<>(StatusCode.FAILURE, "Optimistic locking failure", errorResponse), HttpStatus.CONFLICT);
+        return build(HttpStatus.CONFLICT, "OPTIMISTIC_LOCKING_FAILURE",
+                "The resource has been modified by another process. Please retry.", null);
     }
 
-    /**
-     * Handle insufficient stock during reservation.
-     */
     @ExceptionHandler(InsufficientStockException.class)
-    public ResponseEntity<Response<ErrorResponse>> handleInsufficientStock(
-            InsufficientStockException ex
-    ) {
+    public ResponseEntity<Response<ErrorResponse>> handleInsufficientStock(InsufficientStockException ex) {
         log.warn("Insufficient stock: {}", ex.getMessage());
 
         Map<String, String> details = new HashMap<>();
@@ -105,69 +101,46 @@ public class GlobalExceptionHandler {
         details.put("available", String.valueOf(ex.getAvailable()));
         details.put("requested", String.valueOf(ex.getRequested()));
 
-        var errorResponse = ErrorResponse.builder()
-                .errorCode("INSUFFICIENT_STOCK")
-                .message("Insufficient stock to fulfill reservation")
-                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
-                .timestamp(LocalDateTime.now())
-                .details(details)
-                .build();
-
-        return new ResponseEntity<>(new Response<>(StatusCode.FAILURE, "Insufficient stock", errorResponse), HttpStatus.UNPROCESSABLE_ENTITY);
-    }
-
-    /**
-     * Handle reservation not found errors.
-     */
-    @ExceptionHandler(ReservationNotFoundException.class)
-    public ResponseEntity<Response<ErrorResponse>> handleReservationNotFound(
-            ReservationNotFoundException ex
-    ) {
-        log.warn("Reservation not found: {}", ex.getMessage());
-
-        var errorResponse = ErrorResponse.builder()
-                .errorCode("RESERVATION_NOT_FOUND")
-                .message(ex.getMessage())
-                .status(HttpStatus.NOT_FOUND.value())
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        return new ResponseEntity<>(new Response<>(StatusCode.FAILURE, ex.getMessage(), errorResponse), HttpStatus.NOT_FOUND);
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, "INSUFFICIENT_STOCK",
+                "Insufficient stock to fulfill reservation", details);
     }
 
     /**
      * Handle other inventory exceptions.
      */
     @ExceptionHandler(InventoryException.class)
-    public ResponseEntity<Response<ErrorResponse>> handleInventoryException(
-            InventoryException ex
-    ) {
+    public ResponseEntity<Response<ErrorResponse>> handleInventoryException(InventoryException ex) {
         log.error("Inventory operation failed: {}", ex.getMessage(), ex);
-
-        var errorResponse = ErrorResponse.builder()
-                .errorCode("INVENTORY_OPERATION_FAILED")
-                .message(ex.getMessage())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        return new ResponseEntity<>(new Response<>(StatusCode.FAILURE, ex.getMessage(), errorResponse), HttpStatus.BAD_REQUEST);
+        return build(HttpStatus.BAD_REQUEST, "INVENTORY_OPERATION_FAILED", ex.getMessage(), null);
     }
 
     /**
-     * Handle unexpected exceptions.
+     * Handle unexpected exceptions. Spring MVC exceptions that already carry an HTTP status
+     * (404 no route, 405 wrong method, 415 wrong content type, ...) keep that status.
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Response<ErrorResponse>> handleUnexpectedException(Exception ex) {
-        log.error("Unexpected error", ex);
+        if (ex instanceof org.springframework.web.ErrorResponse springError) {
+            HttpStatusCode status = springError.getStatusCode();
+            log.warn("Request rejected with {}: {}", status, ex.getMessage());
+            return build(status, "REQUEST_REJECTED", ex.getMessage(), null);
+        }
 
+        log.error("Unexpected error", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
+                "An unexpected error occurred. Please contact support.", null);
+    }
+
+    private ResponseEntity<Response<ErrorResponse>> build(HttpStatusCode status, String errorCode,
+                                                         String message, Map<String, String> details) {
         var errorResponse = ErrorResponse.builder()
-                .errorCode("INTERNAL_ERROR")
-                .message("An unexpected error occurred. Please contact support.")
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .errorCode(errorCode)
+                .message(message)
+                .status(status.value())
                 .timestamp(LocalDateTime.now())
+                .details(details)
                 .build();
 
-        return new ResponseEntity<>(new Response<>(StatusCode.FAILURE, "Unexpected error", errorResponse), HttpStatus.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(status).body(new Response<>(StatusCode.FAILURE, message, errorResponse));
     }
 }

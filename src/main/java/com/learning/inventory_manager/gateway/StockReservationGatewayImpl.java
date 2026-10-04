@@ -1,6 +1,7 @@
 package com.learning.inventory_manager.gateway;
 
 import com.learning.inventory_manager.core.domain.StockReservation;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,11 +33,11 @@ public class StockReservationGatewayImpl implements StockReservationGateway {
 
     @Override
     public boolean release(UUID reservationId) {
-        return repository.markReleased(reservationId, java.time.LocalDateTime.now()) == 1;
+        return repository.markReleased(reservationId, LocalDateTime.now()) == 1;
     }
 
     @Override
     public boolean commit(UUID reservationId) {
-        return repository.markCommitted(reservationId, java.time.LocalDateTime.now()) == 1;
+        return repository.markCommitted(reservationId, LocalDateTime.now()) == 1;
     }
 }

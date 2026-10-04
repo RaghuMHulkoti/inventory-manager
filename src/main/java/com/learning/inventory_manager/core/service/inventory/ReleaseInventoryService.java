@@ -1,7 +1,11 @@
 package com.learning.inventory_manager.core.service.inventory;
 
 import com.learning.inventory_manager.core.domain.InventoryLedgerEntry;
+import com.learning.inventory_manager.core.domain.InventoryLedgerEntry.ChangeType;
+import com.learning.inventory_manager.core.domain.StockReservation;
 import com.learning.inventory_manager.core.service.Service;
+import com.learning.inventory_manager.exception.InventoryNotFoundException;
+import com.learning.inventory_manager.exception.InventoryValidationException;
 import com.learning.inventory_manager.exception.ReservationNotFoundException;
 import com.learning.inventory_manager.gateway.InventoryGateway;
 import com.learning.inventory_manager.gateway.InventoryLedgerGateway;
@@ -25,17 +29,9 @@ public class ReleaseInventoryService implements Service<ReleaseInventoryServiceR
     @Override
     @Transactional
     public ReleaseInventoryServiceResponse execute(ReleaseInventoryServiceRequest request) {
-        var reservation = request.getReservationId() != null
-                ? reservationGateway.findById(request.getReservationId()).orElse(null)
-                : reservationGateway.findByIdempotencyKey(request.getIdempotencyKey()).orElse(null);
+        var reservation = findReservation(request);
 
-        if (reservation == null) {
-            throw new ReservationNotFoundException(
-                    request.getReservationId() != null ? request.getReservationId().toString() : request.getIdempotencyKey()
-            );
-        }
-
-        if (reservation.getStatus() != com.learning.inventory_manager.core.domain.StockReservation.ReservationStatus.HELD) {
+        if (reservation.getStatus() != StockReservation.ReservationStatus.HELD) {
             return ReleaseInventoryServiceResponse.builder()
                     .reservationId(reservation.getId())
                     .success(true)
@@ -44,16 +40,20 @@ public class ReleaseInventoryService implements Service<ReleaseInventoryServiceR
 
         boolean released = reservationGateway.release(reservation.getId());
         if (!released) {
-            return ReleaseInventoryServiceResponse.builder().success(false).build();
+            return ReleaseInventoryServiceResponse.builder()
+                    .reservationId(reservation.getId())
+                    .success(false)
+                    .build();
         }
 
         inventoryGateway.releaseStock(reservation.getInventoryId(), reservation.getQuantity());
 
-        var inventory = inventoryGateway.findById(reservation.getInventoryId()).orElseThrow();
+        var inventory = inventoryGateway.findById(reservation.getInventoryId())
+                .orElseThrow(() -> InventoryNotFoundException.byId(reservation.getInventoryId()));
 
         var ledgerEntry = InventoryLedgerEntry.builder()
                 .inventoryId(inventory.getId())
-                .changeType("RELEASE")
+                .changeType(ChangeType.RELEASE)
                 .quantityDelta(reservation.getQuantity())
                 .quantityAfter(inventory.getQuantityOnHand())
                 .reservationId(reservation.getId())
@@ -69,5 +69,17 @@ public class ReleaseInventoryService implements Service<ReleaseInventoryServiceR
                 .reservationId(reservation.getId())
                 .success(true)
                 .build();
+    }
+
+    private StockReservation findReservation(ReleaseInventoryServiceRequest request) {
+        if (request.getReservationId() != null) {
+            return reservationGateway.findById(request.getReservationId())
+                    .orElseThrow(() -> ReservationNotFoundException.byId(request.getReservationId()));
+        }
+        if (request.getIdempotencyKey() != null) {
+            return reservationGateway.findByIdempotencyKey(request.getIdempotencyKey())
+                    .orElseThrow(() -> ReservationNotFoundException.byIdempotencyKey(request.getIdempotencyKey()));
+        }
+        throw new InventoryValidationException("Either reservationId or idempotencyKey is required");
     }
 }

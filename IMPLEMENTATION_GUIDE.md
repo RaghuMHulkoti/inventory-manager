@@ -83,7 +83,7 @@ public BulkInventoryUpsertResponse process(BulkInventoryUpsertRequest request) {
 
 ### 4. UseCase Layer - Business Orchestration
 
-**Class:** `BulkInventoryUpsertUseCase`
+**Class:** `BulkInventoryUpsertUsecase`
 **Method:** `execute(UUID supplierId, List<InventoryItemRequest> items)`
 
 **Transaction:** `@Transactional` (REQUIRED propagation)

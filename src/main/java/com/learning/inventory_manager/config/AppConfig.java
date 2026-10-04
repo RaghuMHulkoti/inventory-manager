@@ -1,37 +1,46 @@
 package com.learning.inventory_manager.config;
 
+import com.learning.inventory_manager.core.processor.bulkinventory.BulkInventoryUpsertProcessor;
+import com.learning.inventory_manager.core.processor.inventory.DeductInventoryProcessor;
+import com.learning.inventory_manager.core.processor.inventory.GetAvailabilityProcessor;
+import com.learning.inventory_manager.core.processor.inventory.GetInventoryProcessor;
+import com.learning.inventory_manager.core.processor.inventory.ReleaseInventoryProcessor;
+import com.learning.inventory_manager.core.processor.inventory.ReserveInventoryProcessor;
+import com.learning.inventory_manager.core.processor.inventory.SetStockProcessor;
+import com.learning.inventory_manager.core.service.inventory.DeductInventoryService;
+import com.learning.inventory_manager.core.service.inventory.GetAvailabilityService;
+import com.learning.inventory_manager.core.service.inventory.GetInventoryService;
+import com.learning.inventory_manager.core.service.inventory.InventoryService;
+import com.learning.inventory_manager.core.service.inventory.ReleaseInventoryService;
+import com.learning.inventory_manager.core.service.inventory.ReserveInventoryService;
+import com.learning.inventory_manager.core.usecase.bulkinventory.BulkInventoryUpsertUsecase;
+import com.learning.inventory_manager.core.usecase.inventory.DeductInventoryUsecase;
+import com.learning.inventory_manager.core.usecase.inventory.GetAvailabilityUsecase;
+import com.learning.inventory_manager.core.usecase.inventory.GetInventoryUsecase;
+import com.learning.inventory_manager.core.usecase.inventory.ReleaseInventoryUsecase;
+import com.learning.inventory_manager.core.usecase.inventory.ReserveInventoryUsecase;
+import com.learning.inventory_manager.core.usecase.inventory.SetStockUsecase;
+import com.learning.inventory_manager.gateway.InventoryEntityMapper;
+import com.learning.inventory_manager.gateway.InventoryGateway;
+import com.learning.inventory_manager.gateway.InventoryGatewayImpl;
+import com.learning.inventory_manager.gateway.InventoryLedgerGateway;
+import com.learning.inventory_manager.gateway.InventoryLedgerGatewayImpl;
+import com.learning.inventory_manager.gateway.InventoryLedgerRepository;
+import com.learning.inventory_manager.gateway.InventoryRepository;
+import com.learning.inventory_manager.gateway.StockReservationGateway;
+import com.learning.inventory_manager.gateway.StockReservationGatewayImpl;
+import com.learning.inventory_manager.gateway.StockReservationRepository;
+import com.learning.inventory_manager.gateway.WarehouseGateway;
+import com.learning.inventory_manager.gateway.WarehouseGatewayImpl;
+import com.learning.inventory_manager.gateway.WarehouseRepository;
+import com.learning.inventory_manager.web.mapper.InventoryWebMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.learning.inventory_manager.gateway.*;
-
-import com.learning.inventory_manager.core.processor.inventory.GetInventoryProcessor;
-import com.learning.inventory_manager.core.processor.inventory.ReleaseInventoryProcessor;
-import com.learning.inventory_manager.core.processor.inventory.SetStockProcessor;
-import com.learning.inventory_manager.core.processor.inventory.DeductInventoryProcessor;
-import com.learning.inventory_manager.core.processor.inventory.ReserveInventoryProcessor;
-import com.learning.inventory_manager.core.processor.inventory.GetAvailabilityProcessor;
-import com.learning.inventory_manager.core.processor.BulkInventory.BulkInventoryUpsertProcessor;
-import com.learning.inventory_manager.core.service.inventory.DeductInventoryService;
-import com.learning.inventory_manager.core.service.inventory.ReleaseInventoryService;
-import com.learning.inventory_manager.core.service.inventory.GetAvailabilityService;
-import com.learning.inventory_manager.core.service.inventory.ReserveInventoryService;
-import com.learning.inventory_manager.core.service.inventory.InventoryService;
-import com.learning.inventory_manager.core.service.inventory.GetInventoryService;
-import com.learning.inventory_manager.core.usecase.inventory.ReleaseInventoryUsecase;
-import com.learning.inventory_manager.core.usecase.inventory.GetAvailabilityUsecase;
-import com.learning.inventory_manager.core.usecase.inventory.DeductInventoryUsecase;
-import com.learning.inventory_manager.core.usecase.inventory.SetStockUsecase;
-import com.learning.inventory_manager.core.usecase.inventory.GetInventoryUsecase;
-import com.learning.inventory_manager.core.usecase.inventory.ReserveInventoryUsecase;
-import com.learning.inventory_manager.core.usecase.bulkInventory.BulkInventoryUpsertUseCase;
-import com.learning.inventory_manager.gateway.InventoryGatewayImpl;
-import com.learning.inventory_manager.gateway.StockReservationGatewayImpl;
-import com.learning.inventory_manager.gateway.InventoryLedgerGatewayImpl;
-import com.learning.inventory_manager.gateway.InventoryEntityMapper;
-import com.learning.inventory_manager.gateway.WarehouseGatewayImpl;
-import com.learning.inventory_manager.web.mapper.InventoryWebMapper;
-
+/**
+ * Wires the core layers by hand so that processor, use case and service classes stay
+ * free of Spring stereotype annotations.
+ */
 @Configuration
 public class AppConfig {
 
@@ -66,8 +75,8 @@ public class AppConfig {
     }
 
     @Bean
-    public BulkInventoryUpsertProcessor bulkInventoryUpsertProcessor(BulkInventoryUpsertUseCase upsertUseCase) {
-        return new BulkInventoryUpsertProcessor(upsertUseCase);
+    public BulkInventoryUpsertProcessor bulkInventoryUpsertProcessor(BulkInventoryUpsertUsecase upsertUsecase) {
+        return new BulkInventoryUpsertProcessor(upsertUsecase);
     }
 
     @Bean
@@ -131,22 +140,22 @@ public class AppConfig {
     }
 
     @Bean
-    public BulkInventoryUpsertUseCase bulkInventoryUpsertUseCase(WarehouseGateway warehouseGateway, InventoryService inventoryService) {
-        return new BulkInventoryUpsertUseCase(warehouseGateway, inventoryService);
+    public BulkInventoryUpsertUsecase bulkInventoryUpsertUsecase(WarehouseGateway warehouseGateway, InventoryService inventoryService) {
+        return new BulkInventoryUpsertUsecase(warehouseGateway, inventoryService);
     }
 
     @Bean
-    public InventoryGatewayImpl inventoryGatewayImpl(InventoryRepository repository, InventoryEntityMapper mapper) {
+    public InventoryGateway inventoryGateway(InventoryRepository repository, InventoryEntityMapper mapper) {
         return new InventoryGatewayImpl(repository, mapper);
     }
 
     @Bean
-    public StockReservationGatewayImpl stockReservationGatewayImpl(StockReservationRepository repository, InventoryEntityMapper mapper) {
+    public StockReservationGateway stockReservationGateway(StockReservationRepository repository, InventoryEntityMapper mapper) {
         return new StockReservationGatewayImpl(repository, mapper);
     }
 
     @Bean
-    public InventoryLedgerGatewayImpl inventoryLedgerGatewayImpl(InventoryLedgerRepository repository, InventoryEntityMapper mapper) {
+    public InventoryLedgerGateway inventoryLedgerGateway(InventoryLedgerRepository repository, InventoryEntityMapper mapper) {
         return new InventoryLedgerGatewayImpl(repository, mapper);
     }
 
@@ -156,13 +165,12 @@ public class AppConfig {
     }
 
     @Bean
-    public WarehouseGatewayImpl warehouseGatewayImpl() {
-        return new WarehouseGatewayImpl();
+    public WarehouseGateway warehouseGateway(WarehouseRepository repository) {
+        return new WarehouseGatewayImpl(repository);
     }
 
     @Bean
     public InventoryWebMapper inventoryWebMapper() {
         return new InventoryWebMapper();
     }
-
 }

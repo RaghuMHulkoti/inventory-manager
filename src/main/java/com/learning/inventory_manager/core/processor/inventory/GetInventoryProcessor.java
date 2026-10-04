@@ -5,6 +5,7 @@ import com.learning.inventory_manager.core.usecase.inventory.GetInventoryUsecase
 import com.learning.inventory_manager.core.usecase.inventory.GetInventoryUsecaseRequest;
 import com.learning.inventory_manager.core.usecase.inventory.GetInventoryUsecaseResponse;
 import lombok.RequiredArgsConstructor;
+
 @RequiredArgsConstructor
 public class GetInventoryProcessor implements Processor<GetInventoryProcessorRequest, GetInventoryProcessorResponse> {
 

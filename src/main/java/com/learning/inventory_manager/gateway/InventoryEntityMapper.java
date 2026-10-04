@@ -6,6 +6,7 @@ import com.learning.inventory_manager.core.domain.StockReservation;
 import com.learning.inventory_manager.gateway.entity.InventoryEntity;
 import com.learning.inventory_manager.gateway.entity.InventoryLedgerEntity;
 import com.learning.inventory_manager.gateway.entity.StockReservationEntity;
+
 /**
  * Persistence-layer mapper — the ONLY place where domain objects and JPA entities cross each other.
  *
@@ -105,7 +106,7 @@ public class InventoryEntityMapper {
         if (domain == null) return null;
         return InventoryLedgerEntity.builder()
                 .inventoryId(domain.getInventoryId())
-                .changeType(domain.getChangeType())
+                .changeType(domain.getChangeType().name())
                 .quantityDelta(domain.getQuantityDelta())
                 .quantityAfter(domain.getQuantityAfter())
                 .reservationId(domain.getReservationId())

@@ -66,7 +66,7 @@ HTTP Request → InventoryController.bulkUpsert()
 
 **Components:**
 - `BulkInventoryUpsertProcessor` - Orchestrates request flow
-- `BulkInventoryUpsertUseCase` - Business workflow orchestration
+- `BulkInventoryUpsertUsecase` - Business workflow orchestration
 
 **Responsibilities:**
 - Coordinate flow between layers
@@ -147,7 +147,7 @@ Response: 2 successes, 1 failure
    - Builds response
 
 4. USECASE LAYER (Transaction starts)
-   BulkInventoryUpsertUseCase.execute()
+   BulkInventoryUpsertUsecase.execute()
    For each item:
    a) Validate warehouse exists → Gateway call
    b) Check inventory exists → Gateway call
@@ -323,7 +323,7 @@ VALUES
 
 **Files:**
 - `InventoryServiceTest.java`
-- `BulkInventoryUpsertUseCaseTest.java`
+- `BulkInventoryUpsertUsecaseTest.java`
 
 ### Integration Tests
 - Full stack testing with H2 database

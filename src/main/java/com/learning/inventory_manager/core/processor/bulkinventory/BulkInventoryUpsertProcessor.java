@@ -1,11 +1,12 @@
-package com.learning.inventory_manager.core.processor.BulkInventory;
+package com.learning.inventory_manager.core.processor.bulkinventory;
 
 import com.learning.inventory_manager.core.processor.Processor;
-import com.learning.inventory_manager.core.usecase.bulkInventory.BulkInventoryUpsertUseCase;
-import com.learning.inventory_manager.core.usecase.bulkInventory.BulkInventoryUpsertUsecaseRequest;
-import com.learning.inventory_manager.core.usecase.bulkInventory.BulkInventoryUpsertUsecaseResponse;
+import com.learning.inventory_manager.core.usecase.bulkinventory.BulkInventoryUpsertUsecase;
+import com.learning.inventory_manager.core.usecase.bulkinventory.BulkInventoryUpsertUsecaseRequest;
+import com.learning.inventory_manager.core.usecase.bulkinventory.BulkInventoryUpsertUsecaseResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 /**
  * Bulk Inventory Upsert Processor.
  *
@@ -23,10 +24,10 @@ public class BulkInventoryUpsertProcessor implements Processor<BulkInventoryUpse
 
     private static final Logger log = LoggerFactory.getLogger(BulkInventoryUpsertProcessor.class);
 
-    private final BulkInventoryUpsertUseCase upsertUseCase;
+    private final BulkInventoryUpsertUsecase upsertUsecase;
 
-    public BulkInventoryUpsertProcessor(BulkInventoryUpsertUseCase upsertUseCase) {
-        this.upsertUseCase = upsertUseCase;
+    public BulkInventoryUpsertProcessor(BulkInventoryUpsertUsecase upsertUsecase) {
+        this.upsertUsecase = upsertUsecase;
     }
 
     @Override
@@ -34,7 +35,7 @@ public class BulkInventoryUpsertProcessor implements Processor<BulkInventoryUpse
         log.info("Processing bulk inventory upsert request from supplier: {}", request.getSupplierId());
 
         var usecaseRequest = buildBulkInventoryUpsertUsecaseRequest(request);
-        var usecaseResponse = upsertUseCase.execute(usecaseRequest);
+        var usecaseResponse = upsertUsecase.execute(usecaseRequest);
 
         var response = buildResponse(usecaseResponse);
 

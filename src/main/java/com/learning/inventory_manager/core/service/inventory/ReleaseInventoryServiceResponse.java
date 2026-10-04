@@ -1,5 +1,6 @@
 package com.learning.inventory_manager.core.service.inventory;
 
+import com.learning.inventory_manager.core.service.ServiceResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReleaseInventoryServiceResponse implements com.learning.inventory_manager.core.service.ServiceResponse {
+public class ReleaseInventoryServiceResponse implements ServiceResponse {
     private UUID reservationId;
     private boolean success;
 }

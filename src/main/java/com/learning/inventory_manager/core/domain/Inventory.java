@@ -56,12 +56,6 @@ public final class Inventory {
     }
 
     // -------------------------------------------------------------------------
-    // Static factory methods
-    // -------------------------------------------------------------------------
-
-
-
-    // -------------------------------------------------------------------------
     // Domain logic
     // -------------------------------------------------------------------------
 
@@ -78,9 +72,12 @@ public final class Inventory {
     }
 
     public void setQuantityOnHand(Integer quantity) {
+        var now = LocalDateTime.now();
+        if (quantity > this.quantityOnHand) {
+            this.lastRestockedAt = now;
+        }
         this.quantityOnHand = quantity;
-        this.updatedAt = LocalDateTime.now();
-        this.lastRestockedAt = LocalDateTime.now();
+        this.updatedAt = now;
     }
 
     public void setThresholds(Integer safetyStock, Integer reorderPoint) {

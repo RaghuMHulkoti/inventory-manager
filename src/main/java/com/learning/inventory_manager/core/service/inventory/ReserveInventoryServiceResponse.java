@@ -1,5 +1,6 @@
 package com.learning.inventory_manager.core.service.inventory;
 
+import com.learning.inventory_manager.core.service.ServiceResponse;
 import com.learning.inventory_manager.core.domain.StockReservation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,6 +13,6 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReserveInventoryServiceResponse implements com.learning.inventory_manager.core.service.ServiceResponse {
+public class ReserveInventoryServiceResponse implements ServiceResponse {
     private List<StockReservation> reservations;
 }

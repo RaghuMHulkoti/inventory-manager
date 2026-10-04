@@ -24,7 +24,7 @@ src/main/java/com/learning/inventory_manager/
 │       └── InventoryLedgerEntry.java
 ├── application/
 │   ├── usecase/
-│   │   └── BulkInventoryUpsertUseCase.java
+│   │   └── BulkInventoryUpsertUsecase.java
 │   ├── processor/
 │   │   └── BulkInventoryUpsertProcessor.java
 │   └── service/
@@ -68,7 +68,7 @@ src/test/java/com/learning/inventory_manager/
 │   ├── service/
 │   │   └── InventoryServiceTest.java
 │   └── usecase/
-│       └── BulkInventoryUpsertUseCaseTest.java
+│       └── BulkInventoryUpsertUsecaseTest.java
 ```
 
 ### 2. Layered Architecture Implemented

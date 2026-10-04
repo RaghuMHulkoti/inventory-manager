@@ -43,10 +43,4 @@ public class StockReservation {
     public enum ReservationStatus {
         HELD, COMMITTED, RELEASED, EXPIRED
     }
-
-    // -------------------------------------------------------------------------
-    // Factory
-    // -------------------------------------------------------------------------
-
-
 }

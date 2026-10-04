@@ -1,10 +1,9 @@
 package com.learning.inventory_manager.web;
 
 import com.learning.inventory_manager.common.StatusCode;
-import com.learning.inventory_manager.core.processor.BulkInventory.BulkInventoryUpsertProcessor;
-import com.learning.inventory_manager.core.processor.BulkInventory.BulkInventoryUpsertProcessorRequest;
+import com.learning.inventory_manager.core.processor.bulkinventory.BulkInventoryUpsertProcessor;
+import com.learning.inventory_manager.core.processor.bulkinventory.BulkInventoryUpsertProcessorRequest;
 import com.learning.inventory_manager.core.processor.inventory.*;
-import com.learning.inventory_manager.exception.InventoryException;
 import com.learning.inventory_manager.web.mapper.InventoryResponseMapper;
 import com.learning.inventory_manager.web.mapper.InventoryWebMapper;
 import com.learning.inventory_manager.web.model.*;
@@ -17,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -44,13 +42,8 @@ public class InventoryController {
     ) {
         log.info("Received bulk inventory upsert request from supplier: {}", request.getSupplierId());
 
-        return Optional.of(request)
-                .map(this::buildBulkInventoryUpsertProcessorRequest)
-                .map(bulkUpsertProcessor::process)
-                .map(InventoryResponseMapper::mapBulkUpsertResponse)
-                .map(response -> new Response<>(StatusCode.SUCCESS, "Bulk upsert processed successfully", response))
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InventoryException("Unable to process bulk upsert request"));
+        var result = bulkUpsertProcessor.process(buildBulkInventoryUpsertProcessorRequest(request));
+        return ok("Bulk upsert processed successfully", InventoryResponseMapper.mapBulkUpsertResponse(result));
     }
 
     private BulkInventoryUpsertProcessorRequest buildBulkInventoryUpsertProcessorRequest(BulkInventoryUpsertRequest request) {
@@ -67,13 +60,8 @@ public class InventoryController {
     public ResponseEntity<Response<GetInventoryResponse>> getInventory(
             @PathVariable UUID supplierProductId
     ) {
-        return Optional.of(supplierProductId)
-                .map(this::buildGetInventoryProcessorRequest)
-                .map(getInventoryProcessor::process)
-                .map(InventoryResponseMapper::mapGetInventoryResponse)
-                .map(response -> new Response<>(StatusCode.SUCCESS, "Inventory retrieved successfully", response))
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InventoryException("Unable to retrieve inventory"));
+        var result = getInventoryProcessor.process(buildGetInventoryProcessorRequest(supplierProductId));
+        return ok("Inventory retrieved successfully", InventoryResponseMapper.mapGetInventoryResponse(result));
     }
 
     private GetInventoryProcessorRequest buildGetInventoryProcessorRequest(UUID supplierProductId) {
@@ -87,13 +75,8 @@ public class InventoryController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody ReserveRequest request
     ) {
-        return Optional.of(request)
-                .map(req -> buildReserveInventoryProcessorRequest(req, idempotencyKey))
-                .map(reserveInventoryProcessor::process)
-                .map(InventoryResponseMapper::mapReserveBatchResponse)
-                .map(response -> new Response<>(StatusCode.SUCCESS, "Reservations processed", response))
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InventoryException("Unable to process reservations"));
+        var result = reserveInventoryProcessor.process(buildReserveInventoryProcessorRequest(request, idempotencyKey));
+        return ok("Reservations processed", InventoryResponseMapper.mapReserveBatchResponse(result));
     }
 
     private ReserveInventoryProcessorRequest buildReserveInventoryProcessorRequest(ReserveRequest request, String idempotencyKey) {
@@ -111,15 +94,10 @@ public class InventoryController {
 
     @PostMapping("/release")
     public ResponseEntity<Response<ReleaseResponse>> release(
-            @RequestBody ReleaseRequest request
+            @Valid @RequestBody ReleaseRequest request
     ) {
-        return Optional.of(request)
-                .map(this::buildReleaseInventoryProcessorRequest)
-                .map(releaseInventoryProcessor::process)
-                .map(InventoryResponseMapper::mapReleaseResponse)
-                .map(response -> new Response<>(StatusCode.SUCCESS, "Release processed", response))
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InventoryException("Unable to process release"));
+        var result = releaseInventoryProcessor.process(buildReleaseInventoryProcessorRequest(request));
+        return ok("Release processed", InventoryResponseMapper.mapReleaseResponse(result));
     }
 
     private ReleaseInventoryProcessorRequest buildReleaseInventoryProcessorRequest(ReleaseRequest request) {
@@ -134,13 +112,8 @@ public class InventoryController {
     public ResponseEntity<Response<DeductResponse>> deduct(
             @Valid @RequestBody DeductRequest request
     ) {
-        return Optional.of(request)
-                .map(this::buildDeductInventoryProcessorRequest)
-                .map(deductInventoryProcessor::process)
-                .map(InventoryResponseMapper::mapDeductResponse)
-                .map(response -> new Response<>(StatusCode.SUCCESS, "Deduction processed", response))
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InventoryException("Unable to process deduction"));
+        var result = deductInventoryProcessor.process(buildDeductInventoryProcessorRequest(request));
+        return ok("Deduction processed", InventoryResponseMapper.mapDeductResponse(result));
     }
 
     private DeductInventoryProcessorRequest buildDeductInventoryProcessorRequest(DeductRequest request) {
@@ -158,12 +131,8 @@ public class InventoryController {
             @RequestParam UUID productId,
             @RequestParam List<UUID> supplierProductIds
     ) {
-        return Optional.of(buildGetAvailabilityProcessorRequest(productId, supplierProductIds))
-                .map(getAvailabilityProcessor::process)
-                .map(InventoryResponseMapper::mapAvailabilityResponse)
-                .map(response -> new Response<>(StatusCode.SUCCESS, "Availability retrieved successfully", response))
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InventoryException("Unable to retrieve availability"));
+        var result = getAvailabilityProcessor.process(buildGetAvailabilityProcessorRequest(productId, supplierProductIds));
+        return ok("Availability retrieved successfully", InventoryResponseMapper.mapAvailabilityResponse(result));
     }
 
     private GetAvailabilityProcessorRequest buildGetAvailabilityProcessorRequest(UUID productId, List<UUID> supplierProductIds) {
@@ -171,5 +140,9 @@ public class InventoryController {
                 .productId(productId)
                 .supplierProductIds(supplierProductIds)
                 .build();
+    }
+
+    private static <T> ResponseEntity<Response<T>> ok(String message, T body) {
+        return ResponseEntity.ok(new Response<>(StatusCode.SUCCESS, message, body));
     }
 }

@@ -3,12 +3,15 @@ package com.learning.inventory_manager.core.usecase.inventory;
 import com.learning.inventory_manager.core.service.inventory.InventoryServiceRequest;
 import com.learning.inventory_manager.core.service.inventory.InventoryServiceResponse;
 import com.learning.inventory_manager.core.service.inventory.InventoryService;
+import com.learning.inventory_manager.core.usecase.Usecase;
 import lombok.RequiredArgsConstructor;
+
 @RequiredArgsConstructor
-public class SetStockUsecase {
+public class SetStockUsecase implements Usecase<SetStockUsecaseRequest, SetStockUsecaseResponse> {
 
     private final InventoryService inventoryService;
 
+    @Override
     public SetStockUsecaseResponse execute(SetStockUsecaseRequest request) {
         var serviceRequest = buildInventoryServiceRequest(request);
         var serviceResponse = inventoryService.execute(serviceRequest);

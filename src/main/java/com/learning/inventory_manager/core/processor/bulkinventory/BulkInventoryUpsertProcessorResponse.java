@@ -1,4 +1,4 @@
-package com.learning.inventory_manager.core.processor.BulkInventory;
+package com.learning.inventory_manager.core.processor.bulkinventory;
 
 import com.learning.inventory_manager.core.processor.ProcessorResponse;
 import lombok.AllArgsConstructor;

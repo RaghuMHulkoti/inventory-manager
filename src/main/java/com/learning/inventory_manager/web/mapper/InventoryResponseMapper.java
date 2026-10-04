@@ -1,10 +1,11 @@
 package com.learning.inventory_manager.web.mapper;
 
-import com.learning.inventory_manager.core.processor.BulkInventory.BulkInventoryUpsertProcessorResponse;
+import com.learning.inventory_manager.core.domain.Inventory;
+import com.learning.inventory_manager.core.processor.bulkinventory.BulkInventoryUpsertProcessorResponse;
 import com.learning.inventory_manager.core.processor.inventory.*;
 import com.learning.inventory_manager.web.response.*;
 
-public class InventoryResponseMapper {
+public final class InventoryResponseMapper {
 
     private InventoryResponseMapper() {}
 
@@ -28,7 +29,28 @@ public class InventoryResponseMapper {
 
     public static GetInventoryResponse mapGetInventoryResponse(GetInventoryProcessorResponse response) {
         return GetInventoryResponse.builder()
-                .inventories(response.getInventories())
+                .inventories(response.getInventories().stream()
+                        .map(InventoryResponseMapper::mapInventory)
+                        .toList())
+                .build();
+    }
+
+    private static InventoryResponse mapInventory(Inventory inventory) {
+        return InventoryResponse.builder()
+                .id(inventory.getId())
+                .supplierProductId(inventory.getSupplierProductId())
+                .warehouseId(inventory.getWarehouseId())
+                .quantityOnHand(inventory.getQuantityOnHand())
+                .quantityReserved(inventory.getQuantityReserved())
+                .availableQuantity(inventory.getAvailableQuantity())
+                .safetyStock(inventory.getSafetyStock())
+                .reorderPoint(inventory.getReorderPoint())
+                .belowSafetyStock(inventory.isBelowSafetyStock())
+                .belowReorderPoint(inventory.isBelowReorderPoint())
+                .version(inventory.getVersion())
+                .createdAt(inventory.getCreatedAt())
+                .updatedAt(inventory.getUpdatedAt())
+                .lastRestockedAt(inventory.getLastRestockedAt())
                 .build();
     }
 

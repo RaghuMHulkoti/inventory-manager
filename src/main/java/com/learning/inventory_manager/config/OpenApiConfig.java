@@ -16,7 +16,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .servers(List.of(
                         new Server()
-                                .url("https://supplier-service-tha0.onrender.com")
+                                .url("https://inventory-manager-8q64.onrender.com")
                                 .description("Render Production Server")
                 ));
     }

@@ -2,7 +2,7 @@ spring:
   application:
     name: inventory-manager
   datasource:
-    url: jdbc:postgresql://pg-3f13466d-raghavendrahulkoti1-8f0c.h.aivencloud.com:28780/defaultdb?sslmode=require&currentSchema=%22Supplier%22
+    url: jdbc:postgresql://YOUR_AIVEN_HOST:28780/defaultdb?sslmode=require&currentSchema=%22Inventory%22
     username: avnadmin
     password: AVNS_yGow9uoMWcZbMVMfRk8
     driver-class-name: org.postgresql.Driver

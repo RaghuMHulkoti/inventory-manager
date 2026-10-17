@@ -15,11 +15,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    open-in-view: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        default_schema: '"Inventory"'
   flyway:
     enabled: true
     locations: classpath:db/migration

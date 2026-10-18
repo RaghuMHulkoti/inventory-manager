@@ -1,5 +1,8 @@
 package com.learning.inventory_manager.gateway;
 
+import com.learning.inventory_manager.core.domain.Warehouse;
+
+import java.util.Optional;
 import java.util.UUID;
 
 public interface WarehouseGateway {
@@ -12,4 +15,13 @@ public interface WarehouseGateway {
      * @throws com.learning.inventory_manager.exception.WarehouseNotFoundException if not
      */
     void validateWarehouseBelongsToSupplier(UUID warehouseId, UUID supplierId);
+
+    Optional<Warehouse> findById(UUID warehouseId);
+
+    /**
+     * Creates the warehouse or updates the details of the one with the same id.
+     *
+     * @throws com.learning.inventory_manager.exception.InventoryValidationException if its code is used by another warehouse
+     */
+    Warehouse save(Warehouse warehouse);
 }

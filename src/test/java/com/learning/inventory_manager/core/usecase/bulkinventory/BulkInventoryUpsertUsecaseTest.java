@@ -186,5 +186,15 @@ class BulkInventoryUpsertUsecaseTest {
                 throw new WarehouseNotFoundException(warehouseId);
             }
         }
+
+        @Override
+        public java.util.Optional<com.learning.inventory_manager.core.domain.Warehouse> findById(UUID warehouseId) {
+            return java.util.Optional.empty();
+        }
+
+        @Override
+        public com.learning.inventory_manager.core.domain.Warehouse save(com.learning.inventory_manager.core.domain.Warehouse warehouse) {
+            return warehouse;
+        }
     }
 }

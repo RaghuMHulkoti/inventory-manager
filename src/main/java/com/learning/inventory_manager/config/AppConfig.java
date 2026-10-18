@@ -4,6 +4,9 @@ import com.learning.inventory_manager.core.processor.bulkinventory.BulkInventory
 import com.learning.inventory_manager.core.processor.inventory.DeductInventoryProcessor;
 import com.learning.inventory_manager.core.processor.inventory.GetAvailabilityProcessor;
 import com.learning.inventory_manager.core.processor.inventory.GetInventoryProcessor;
+import com.learning.inventory_manager.core.processor.warehouse.RegisterWarehouseProcessor;
+import com.learning.inventory_manager.core.service.warehouse.RegisterWarehouseService;
+import com.learning.inventory_manager.core.usecase.warehouse.RegisterWarehouseUsecase;
 import com.learning.inventory_manager.core.processor.inventory.ReleaseInventoryProcessor;
 import com.learning.inventory_manager.core.processor.inventory.ReserveInventoryProcessor;
 import com.learning.inventory_manager.core.processor.inventory.SetStockProcessor;
@@ -162,6 +165,21 @@ public class AppConfig {
     @Bean
     public InventoryEntityMapper inventoryEntityMapper() {
         return new InventoryEntityMapper();
+    }
+
+    @Bean
+    public RegisterWarehouseProcessor registerWarehouseProcessor(RegisterWarehouseUsecase usecase) {
+        return new RegisterWarehouseProcessor(usecase);
+    }
+
+    @Bean
+    public RegisterWarehouseUsecase registerWarehouseUsecase(RegisterWarehouseService service) {
+        return new RegisterWarehouseUsecase(service);
+    }
+
+    @Bean
+    public RegisterWarehouseService registerWarehouseService(WarehouseGateway warehouseGateway) {
+        return new RegisterWarehouseService(warehouseGateway);
     }
 
     @Bean

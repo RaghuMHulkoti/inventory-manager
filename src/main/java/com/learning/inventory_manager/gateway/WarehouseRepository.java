@@ -32,5 +32,14 @@ public interface WarehouseRepository extends JpaRepository<WarehouseEntity, UUID
      * @return true if warehouse exists and is active
      */
     boolean existsByIdAndIsActiveTrue(UUID id);
+
+    /**
+     * Check that an active warehouse with this id is owned by the given supplier.
+     *
+     * @param id         warehouse ID
+     * @param supplierId owning supplier ID
+     * @return true if the warehouse exists, is active and belongs to the supplier
+     */
+    boolean existsByIdAndSupplierIdAndIsActiveTrue(UUID id, UUID supplierId);
 }
 

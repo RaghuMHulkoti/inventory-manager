@@ -13,8 +13,8 @@ public class WarehouseGatewayImpl implements WarehouseGateway {
     }
 
     @Override
-    public void validateWarehouseExists(UUID warehouseId) {
-        if (!repository.existsByIdAndIsActiveTrue(warehouseId)) {
+    public void validateWarehouseBelongsToSupplier(UUID warehouseId, UUID supplierId) {
+        if (!repository.existsByIdAndSupplierIdAndIsActiveTrue(warehouseId, supplierId)) {
             throw new WarehouseNotFoundException(warehouseId);
         }
     }

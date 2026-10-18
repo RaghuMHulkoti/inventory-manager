@@ -84,6 +84,22 @@ class BulkInventoryUpsertUsecaseTest {
         assertEquals(BulkInventoryUpsertUsecaseResponse.Status.FAILED, response.getResults().get(1).getStatus());
     }
 
+    @Test
+    void executeFailsItemWhenWarehouseBelongsToAnotherSupplier() {
+        var foreignWarehouseId = UUID.randomUUID();
+        warehouseGateway.foreignWarehouses.add(foreignWarehouseId);
+
+        var item = new Inventory(java.util.UUID.randomUUID(), UUID.randomUUID(), foreignWarehouseId, 50, 0, 0L, java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
+        var request = BulkInventoryUpsertUsecaseRequest.builder()
+                .supplierId(supplierId)
+                .items(List.of(item))
+                .build();
+
+        var response = useCase.execute(request);
+
+        assertEquals(BulkInventoryUpsertUsecaseResponse.Status.FAILED, response.getResults().getFirst().getStatus());
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -162,10 +178,11 @@ class BulkInventoryUpsertUsecaseTest {
 
     private static final class RecordingWarehouseGateway implements WarehouseGateway {
         private final Set<UUID> invalidWarehouses = new HashSet<>();
+        private final Set<UUID> foreignWarehouses = new HashSet<>();
 
         @Override
-        public void validateWarehouseExists(UUID warehouseId) {
-            if (invalidWarehouses.contains(warehouseId)) {
+        public void validateWarehouseBelongsToSupplier(UUID warehouseId, UUID supplierId) {
+            if (invalidWarehouses.contains(warehouseId) || foreignWarehouses.contains(warehouseId)) {
                 throw new WarehouseNotFoundException(warehouseId);
             }
         }

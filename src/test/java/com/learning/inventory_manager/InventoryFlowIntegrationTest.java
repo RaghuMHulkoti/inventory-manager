@@ -36,16 +36,18 @@ class InventoryFlowIntegrationTest {
     @Autowired
     private WarehouseRepository warehouseRepository;
 
+    private UUID supplierId;
     private UUID warehouseId;
     private UUID supplierProductId;
 
     @BeforeEach
     void setUp() {
+        supplierId = UUID.randomUUID();
         warehouseId = UUID.randomUUID();
         supplierProductId = UUID.randomUUID();
         warehouseRepository.save(WarehouseEntity.builder()
                 .id(warehouseId)
-                .supplierId(UUID.randomUUID())
+                .supplierId(supplierId)
                 .code("WH-" + warehouseId)
                 .name("Main Warehouse")
                 .isActive(true)
@@ -78,6 +80,17 @@ class InventoryFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.body.successCount").value(0))
                 .andExpect(jsonPath("$.body.failureCount").value(1));
+    }
+
+    @Test
+    void bulkUpsertRejectsWarehouseOwnedByAnotherSupplier() throws Exception {
+        bulkUpsertAs(UUID.randomUUID(), warehouseId, 10)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.body.successCount").value(0))
+                .andExpect(jsonPath("$.body.failureCount").value(1));
+
+        mockMvc.perform(get(BASE + "/" + supplierProductId))
+                .andExpect(jsonPath("$.body.inventories", hasSize(0)));
     }
 
     @Test
@@ -185,9 +198,13 @@ class InventoryFlowIntegrationTest {
     // -------------------------------------------------------------------------
 
     private ResultActions bulkUpsert(UUID targetWarehouseId, int quantity) throws Exception {
+        return bulkUpsertAs(supplierId, targetWarehouseId, quantity);
+    }
+
+    private ResultActions bulkUpsertAs(UUID requestingSupplierId, UUID targetWarehouseId, int quantity) throws Exception {
         return mockMvc.perform(post(BASE + "/bulk-upsert").contentType(MediaType.APPLICATION_JSON).content("""
                 {"supplierId":"%s","items":[{"supplierProductId":"%s","warehouseId":"%s","quantityOnHand":%d}]}
-                """.formatted(UUID.randomUUID(), supplierProductId, targetWarehouseId, quantity)));
+                """.formatted(requestingSupplierId, supplierProductId, targetWarehouseId, quantity)));
     }
 
     private ResultActions reserve(UUID orderId, UUID orderItemId, int quantity) throws Exception {

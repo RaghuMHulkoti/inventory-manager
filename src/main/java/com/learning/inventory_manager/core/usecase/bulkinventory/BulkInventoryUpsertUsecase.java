@@ -16,7 +16,7 @@ import java.util.UUID;
  *
  * Responsibility:
  * - Iterate over each Inventory domain object in the request
- * - Validate that the target warehouse exists and is active (business rule)
+ * - Validate that the target warehouse exists, is active and belongs to the supplier (business rule)
  * - Delegate to InventoryService for the actual create/update logic
  * - Isolate per-item failures so one bad item never aborts the whole batch
  * - Return a result per item indicating success/failure and the operation performed
@@ -79,8 +79,8 @@ public class BulkInventoryUpsertUsecase implements Usecase<BulkInventoryUpsertUs
         log.debug("Processing inventory item — product: {}, warehouse: {}, quantity: {}",
                 inventory.getSupplierProductId(), inventory.getWarehouseId(), inventory.getQuantityOnHand());
 
-        // Business validation: warehouse must exist and be active
-        warehouseGateway.validateWarehouseExists(inventory.getWarehouseId());
+        // Business validation: warehouse must exist, be active and belong to this supplier
+        warehouseGateway.validateWarehouseBelongsToSupplier(inventory.getWarehouseId(), supplierId);
         log.debug("Warehouse validation passed for: {}", inventory.getWarehouseId());
 
         InventoryServiceRequest request = buildInventoryServiceRequest(inventory, supplierId);

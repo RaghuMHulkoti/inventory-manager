@@ -2,12 +2,13 @@ spring:
   application:
     name: inventory-manager
   datasource:
-    url: jdbc:postgresql://pg-3f13466d-raghavendrahulkoti1-8f0c.h.aivencloud.com:28780/defaultdb?sslmode=require&currentSchema=Inventory
-    username: avnadmin
-    password: AVNS_yGow9uoMWcZbMVMfRk8
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:oracle:thin:@ecommerce_tp?TNS_ADMIN=${WALLET_DIR:/Users/raghavendra/Downloads/Wallet_ECOMMERCE}
+    username: ${DB_USERNAME:ADMIN}
+    password: ${DB_PASSWORD:"@2ztrn322hyR"}
+    driver-class-name: oracle.jdbc.OracleDriver
     hikari:
-      maximum-pool-size: 1
+      connection-test-query: SELECT 1 FROM DUAL
+      maximum-pool-size: 2
       minimum-idle: 0
       connection-timeout: 30000
       idle-timeout: 600000
@@ -16,13 +17,15 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: org.hibernate.dialect.OracleDialect
     properties:
       hibernate:
-        default_schema: '"Inventory"'
+        default_schema: INVENTORY
   flyway:
     enabled: true
     locations: classpath:db/migration
+    schemas: INVENTORY
+    default-schema: INVENTORY
 
 management:
   endpoints:

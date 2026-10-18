@@ -10,7 +10,7 @@ public class WarehouseNotFoundException extends InventoryException {
     private final UUID warehouseId;
 
     public WarehouseNotFoundException(UUID warehouseId) {
-        super("Warehouse not found or is inactive: " + warehouseId);
+        super("Warehouse not found, inactive, or not owned by this supplier: " + warehouseId);
         this.warehouseId = warehouseId;
     }
 

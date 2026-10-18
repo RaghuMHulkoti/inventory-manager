@@ -39,6 +39,8 @@ RUN groupadd --system spring \
 COPY --from=build --chown=spring:spring \
      /app/target/inventory-manager-*.jar app.jar
 
+COPY --chown=spring:spring docker-entrypoint.sh /app/docker-entrypoint.sh
+
 # Switch to non-root user (security best-practice)
 USER spring
 
@@ -47,4 +49,4 @@ EXPOSE 8080
 
 # -XX:MaxRAMPercentage=75.0 lets the JVM use up to 75% of the
 # container's memory limit, avoiding OOM kills.
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

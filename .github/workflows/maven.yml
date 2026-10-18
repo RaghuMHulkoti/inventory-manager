@@ -57,6 +57,15 @@ jobs:
       - name: Verify JAR exists
         run: ls -lh target/inventory-manager-*.jar
 
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports
+          retention-days: 7
+          if-no-files-found: ignore
+
       # ── Upload jar so the docker job can inspect the version ───────────────
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
@@ -105,28 +114,34 @@ jobs:
             -t ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.git_sha }} \
             .
 
-      # ── Smoke-test: verify the container starts (Step 4) ──────────────────
-      # Flyway and JPA are disabled so the container doesn't need a live DB.
-      - name: Smoke-test — container starts without crashing
+      # ── Smoke-test: the container boots and reports healthy ────────────────
+      # There is no Oracle database in CI. Flyway is switched off and schema validation is disabled, so the
+      # app starts without needing a connection; the liveness probe does not touch the database.
+      - name: Smoke-test — container starts and is live
         run: |
-          docker run -d --name inventory-smoke \
-            -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/inventory_db \
-            -e SPRING_DATASOURCE_USERNAME=postgres \
-            -e SPRING_DATASOURCE_PASSWORD=postgres \
+          docker run -d --name inventory-smoke -p 8080:8080 \
+            -e SERVER_PORT=8080 \
+            -e DB_PASSWORD=ci-placeholder \
             -e SPRING_FLYWAY_ENABLED=false \
             -e SPRING_JPA_HIBERNATE_DDL_AUTO=none \
             ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
 
-          sleep 5
-
-          STATUS=$(docker inspect -f '{{.State.Status}}' inventory-smoke)
-          echo "Container status: ${STATUS}"
-          if [ "${STATUS}" != "running" ]; then
-            echo "❌ Container exited — printing logs:"
-            docker logs inventory-smoke
-            exit 1
-          fi
-          echo "✅ Container is running"
+          for i in $(seq 1 30); do
+            STATUS=$(docker inspect -f '{{.State.Status}}' inventory-smoke)
+            if [ "${STATUS}" != "running" ]; then
+              echo "❌ Container exited — printing logs:"
+              docker logs inventory-smoke
+              exit 1
+            fi
+            if curl -fsS http://localhost:8080/actuator/health/liveness | grep -q '"UP"'; then
+              echo "✅ Container is running and liveness is UP"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "❌ Liveness never became UP — printing logs:"
+          docker logs inventory-smoke
+          exit 1
 
       # ── Always print logs for visibility ──────────────────────────────────
       - name: Print container logs

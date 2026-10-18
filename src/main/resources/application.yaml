@@ -28,10 +28,22 @@ spring:
     default-schema: INVENTORY
 
 management:
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        http.client.requests: true
+    data:
+      repository:
+        autotime:
+          enabled: true
+          percentiles-histogram: true
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,metrics,prometheus
   endpoint:
     health:
       probes:
@@ -41,4 +53,9 @@ management:
     livenessstate:
       enabled: true
     readinessstate:
+      enabled: true
+
+server:
+  tomcat:
+    mbeanregistry:
       enabled: true

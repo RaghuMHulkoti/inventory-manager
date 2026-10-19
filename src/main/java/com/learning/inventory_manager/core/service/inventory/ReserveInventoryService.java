@@ -1,5 +1,6 @@
 package com.learning.inventory_manager.core.service.inventory;
 
+import com.learning.inventory_manager.core.domain.InventoryEvents;
 import com.learning.inventory_manager.core.domain.InventoryLedgerEntry;
 import com.learning.inventory_manager.core.domain.InventoryLedgerEntry.ChangeType;
 import com.learning.inventory_manager.core.domain.StockReservation;
@@ -8,11 +9,15 @@ import com.learning.inventory_manager.exception.InsufficientStockException;
 import com.learning.inventory_manager.exception.InventoryNotFoundException;
 import com.learning.inventory_manager.gateway.InventoryGateway;
 import com.learning.inventory_manager.gateway.InventoryLedgerGateway;
+import com.learning.inventory_manager.gateway.InventoryOutboxGateway;
 import com.learning.inventory_manager.gateway.StockReservationGateway;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,13 +26,19 @@ public class ReserveInventoryService implements Service<ReserveInventoryServiceR
     private final InventoryGateway inventoryGateway;
     private final StockReservationGateway reservationGateway;
     private final InventoryLedgerGateway ledgerGateway;
+    private final InventoryOutboxGateway outboxGateway;
+    private final JsonMapper json;
 
     public ReserveInventoryService(InventoryGateway inventoryGateway,
                                    StockReservationGateway reservationGateway,
-                                   InventoryLedgerGateway ledgerGateway) {
+                                   InventoryLedgerGateway ledgerGateway,
+                                   InventoryOutboxGateway outboxGateway,
+                                   JsonMapper json) {
         this.inventoryGateway = inventoryGateway;
         this.reservationGateway = reservationGateway;
         this.ledgerGateway = ledgerGateway;
+        this.outboxGateway = outboxGateway;
+        this.json = json;
     }
 
     @Override
@@ -94,8 +105,27 @@ public class ReserveInventoryService implements Service<ReserveInventoryServiceR
             ledgerGateway.recordChange(ledgerEntry);
         }
 
+        // Written in the same transaction as the stock change; replays re-emit it, which Order Service tolerates.
+        outboxGateway.append(request.getOrderId(), "INVENTORY_RESERVED", reservedEvent(request.getOrderId(), createdReservations));
+
         return ReserveInventoryServiceResponse.builder()
                 .reservations(createdReservations)
                 .build();
+    }
+
+    private String reservedEvent(UUID orderId, List<StockReservation> reservations) {
+        var data = new LinkedHashMap<String, Object>();
+        data.put("orderId", orderId.toString());
+        data.put("reservations", reservations.stream().map(r -> {
+            var line = new LinkedHashMap<String, Object>();
+            line.put("orderItemId", r.getOrderItemId().toString());
+            line.put("reservationId", r.getId().toString());
+            line.put("supplierProductId", r.getSupplierProductId().toString());
+            line.put("warehouseId", r.getWarehouseId().toString());
+            line.put("quantity", r.getQuantity());
+            line.put("expiresAt", String.valueOf(r.getExpiresAt()));
+            return line;
+        }).toList());
+        return InventoryEvents.envelope(json, "INVENTORY_RESERVED", Instant.now(), data);
     }
 }

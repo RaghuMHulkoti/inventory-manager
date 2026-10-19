@@ -11,3 +11,6 @@ spring:
   flyway:
     enabled: false
 
+inventory:
+  jobs:
+    enabled: false

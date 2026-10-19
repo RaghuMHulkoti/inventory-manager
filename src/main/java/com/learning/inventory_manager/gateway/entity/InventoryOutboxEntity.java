@@ -44,6 +44,13 @@ public class InventoryOutboxEntity {
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
 
+    @Column(name = "attempts", nullable = false)
+    @Builder.Default
+    private int attempts = 0;
+
+    @Column(name = "last_error", length = 1000)
+    private String lastError;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

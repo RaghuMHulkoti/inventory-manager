@@ -1,6 +1,6 @@
 # Technical Design Document (TDD) / Software Architecture Document (SAD)
 
-# E-Commerce Marketplace Platform — "Project Bazaar"
+# E-Commerce Marketplace Platform — "ShopTrail"
 
 **Document Type:** Technical Design Document & Software Architecture Document
 **Status:** Approved for Engineering Review
@@ -44,7 +44,7 @@
 
 ### 1.1 Purpose
 
-This document defines the target architecture for **Project Bazaar**, a multi-tenant marketplace platform comparable to Amazon, Flipkart, or Walmart Marketplace. The platform enables:
+This document defines the target architecture for **ShopTrail**, a multi-tenant marketplace platform comparable to Amazon, Flipkart, or Walmart Marketplace. The platform enables:
 
 - **Customers** to discover, purchase, and review products from many independent sellers.
 - **Suppliers/Sellers** to list catalogs, manage inventory across warehouses, fulfil orders, and receive payouts.
@@ -2372,7 +2372,7 @@ We apply **Hexagonal / Ports & Adapters** + **DDD tactical patterns** per servic
 ### 19.1 Package layout (template)
 
 ```
-com.bazaar.<service>
+com.shoptrail.<service>
 ├── domain                       # PURE business — no Spring, no JPA, no IO
 │   ├── model                    # Aggregates, Entities, Value Objects
 │   ├── event                    # Domain events (POJOs)
@@ -2667,7 +2667,7 @@ spec:
           labelSelector: {matchLabels: {app: inventory-service}}
       containers:
       - name: app
-        image: registry/bazaar/inventory:1.42.0
+        image: registry/shoptrail/inventory:1.42.0
         ports: [{containerPort: 8080}]
         env:
           - {name: SPRING_PROFILES_ACTIVE, value: prod}

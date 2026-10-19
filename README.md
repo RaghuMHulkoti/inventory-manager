@@ -1,6 +1,6 @@
 <div align="center">
   <h1>📦 Inventory Manager</h1>
-  <p><em>The source of truth for stock, reservations, and fulfilment logic.</em></p>
+  <p><em>The source of truth for stock, reservations, and fulfilment logic in the ShopTrail marketplace.</em></p>
 
   ![Java](https://img.shields.io/badge/Java-21-blue.svg)
   ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-brightgreen.svg)

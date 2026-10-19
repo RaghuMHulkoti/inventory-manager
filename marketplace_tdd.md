@@ -96,7 +96,7 @@ All services run on Render (Docker, free tier). Deploys are triggered manually o
 
 Every service exposes `/actuator/health` (with liveness and readiness probes), Swagger UI at `/swagger-ui.html` (titled "ShopTrail ... Service API") and OpenAPI JSON at `/v3/api-docs`.
 
-**Tech stack:** Java 25, Spring Boot 4, Spring Data JPA (Hibernate, `ddl-auto` none or validate), Flyway, Oracle JDBC with wallet, Spring Kafka, Micrometer (Prometheus and OTLP), OpenTelemetry, springdoc. user-service adds Spring Security (OAuth2 resource server, Nimbus JWT) and optional Redis.
+**Tech stack:** Java 25 and Spring Boot 4.1 (user, order, payment, cart, product), Java 21 and Spring Boot 4.0 (inventory), Java 21 and Spring Boot 3.5 (supplier); Spring Data JPA (Hibernate, `ddl-auto` none or validate), Flyway, Oracle JDBC with wallet, Spring Kafka, Micrometer (Prometheus and OTLP), OpenTelemetry, springdoc. user-service adds Spring Security (OAuth2 resource server, Nimbus JWT) and optional Redis.
 
 **CI:** each repo has `.github/workflows/maven.yml`: `mvn test`, then a Docker build and a smoke test that starts the container, then a push to `ghcr.io`.
 
@@ -174,7 +174,7 @@ On JDK newer than 25, Lombok is pinned to `1.18.48` in the `pom.xml` files that 
 | `PUBLIC_BASE_URL` | `http://localhost:8081` | Links in mails open `<url>/console.html` |
 | `REDIS_HEALTH_ENABLED` | `false` | Turn on the Redis health check when Redis exists |
 
-Profile `dev` prints verification and reset tokens to the log. Do not use it in production.
+Profile `dev` (set `SPRING_PROFILES_ACTIVE=dev`) prints verification and reset tokens to the log. It is never active by default; do not use it in production.
 
 ### 3.3 First admin
 

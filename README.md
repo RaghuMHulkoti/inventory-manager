@@ -204,3 +204,7 @@ erDiagram
 - Endpoints are open; no JWT or role check yet.
 - Expired reservations are not released by a job; order-service releases them on cancel or timeout.
 - Reorder alerts are not built (the columns exist).
+
+## License
+
+Copyright (c) 2026 Raghavendra. All rights reserved. The code is published for viewing only; copying or reuse requires written permission. See [LICENSE](LICENSE).

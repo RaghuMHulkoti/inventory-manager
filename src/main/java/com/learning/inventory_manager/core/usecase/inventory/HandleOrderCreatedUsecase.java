@@ -2,6 +2,7 @@ package com.learning.inventory_manager.core.usecase.inventory;
 
 import com.learning.inventory_manager.core.domain.InventoryEvents;
 import com.learning.inventory_manager.core.domain.ReservationItem;
+import com.learning.inventory_manager.core.domain.Tracing;
 import com.learning.inventory_manager.core.usecase.Usecase;
 import com.learning.inventory_manager.core.usecase.UsecaseRequest;
 import com.learning.inventory_manager.core.usecase.UsecaseResponse;
@@ -55,25 +56,27 @@ public class HandleOrderCreatedUsecase
         if (!"ORDER_CREATED".equals(root.path("eventType").asString(""))) {
             return new Response(Outcome.IGNORED);
         }
-        var data = root.path("data");
-        var orderId = UUID.fromString(data.path("orderId").asString(""));
-        var items = new ArrayList<ReservationItem>();
-        data.path("items").forEach(i -> items.add(ReservationItem.builder()
-                .orderItemId(UUID.fromString(i.path("orderItemId").asString("")))
-                .supplierProductId(UUID.fromString(i.path("supplierProductId").asString("")))
-                .warehouseId(UUID.fromString(i.path("warehouseId").asString("")))
-                .quantity(i.path("quantity").asInt()).build()));
-        try {
-            reserve.execute(ReserveInventoryUsecaseRequest.builder().orderId(orderId).items(items)
-                    .ttlSeconds(data.path("reservationTtlSeconds").asLong(1800)).idempotencyPrefix(orderId.toString())
-                    .build());
-            return new Response(Outcome.RESERVED);
-        } catch (InsufficientStockException e) {
-            return refuse(orderId, "INSUFFICIENT_STOCK", e.getMessage());
-        } catch (InventoryNotFoundException e) {
-            return refuse(orderId, "STOCK_NOT_FOUND", e.getMessage());
-        } catch (InventoryValidationException e) {
-            return refuse(orderId, "INVALID_RESERVATION", e.getMessage());
+        try (var ignored = Tracing.continueTrace(root.path("traceId").asString(""))) {
+            var data = root.path("data");
+            var orderId = UUID.fromString(data.path("orderId").asString(""));
+            var items = new ArrayList<ReservationItem>();
+            data.path("items").forEach(i -> items.add(ReservationItem.builder()
+                    .orderItemId(UUID.fromString(i.path("orderItemId").asString("")))
+                    .supplierProductId(UUID.fromString(i.path("supplierProductId").asString("")))
+                    .warehouseId(UUID.fromString(i.path("warehouseId").asString("")))
+                    .quantity(i.path("quantity").asInt()).build()));
+            try {
+                reserve.execute(ReserveInventoryUsecaseRequest.builder().orderId(orderId).items(items)
+                        .ttlSeconds(data.path("reservationTtlSeconds").asLong(1800)).idempotencyPrefix(orderId.toString())
+                        .build());
+                return new Response(Outcome.RESERVED);
+            } catch (InsufficientStockException e) {
+                return refuse(orderId, "INSUFFICIENT_STOCK", e.getMessage());
+            } catch (InventoryNotFoundException e) {
+                return refuse(orderId, "STOCK_NOT_FOUND", e.getMessage());
+            } catch (InventoryValidationException e) {
+                return refuse(orderId, "INVALID_RESERVATION", e.getMessage());
+            }
         }
     }
 

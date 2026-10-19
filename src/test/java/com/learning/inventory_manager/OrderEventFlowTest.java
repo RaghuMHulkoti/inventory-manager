@@ -85,6 +85,23 @@ class OrderEventFlowTest {
     }
 
     @Test
+    void theTraceIdOfOrderCreatedIsKeptOnTheAnswer() {
+        handler.execute(new HandleOrderCreatedUsecase.Request(orderCreated(2).replace("\"eventType\"",
+                "\"traceId\":\"4bf92f3577b34da6a3ce929d0e0e4736\",\"eventType\"")));
+
+        assertThat(json.readTree(jdbc.queryForObject("SELECT payload FROM INVENTORY.inventory_outbox", String.class))
+                .path("traceId").asString("")).isEqualTo("4bf92f3577b34da6a3ce929d0e0e4736");
+    }
+
+    @Test
+    void anEventWithoutAnIncomingTraceStillGetsOne() {
+        handler.execute(new HandleOrderCreatedUsecase.Request(orderCreated(9)));
+
+        assertThat(json.readTree(jdbc.queryForObject("SELECT payload FROM INVENTORY.inventory_outbox", String.class))
+                .path("traceId").asString("")).matches("[0-9a-f]{32}");
+    }
+
+    @Test
     void aRedeliveredOrderCreatedReturnsTheSameReservation() {
         handler.execute(new HandleOrderCreatedUsecase.Request(orderCreated(2)));
         handler.execute(new HandleOrderCreatedUsecase.Request(orderCreated(2)));
